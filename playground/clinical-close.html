@@ -1,0 +1,66 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>clinical close-up</title></head><body style="margin:0;background:#cfd8e4">
+<script type="module">
+// Close-up stage lit like the real engine (neutral tone mapping, midday sun and sky), for judging clinical props up close.
+//   /playground/clinical-close.html?names=bed,bed&h=1.6&cols=2&gap=0.8&states=free,occupied&at=0,0.5,0
+import * as THREE from 'three';
+import { CATALOG, makeProp } from '../src/props/registry.js';
+import { registerClinicalProps } from '../src/props/clinical.js';
+import { bakeStatic } from '../src/style/kit.js';
+import { C } from '../src/style/palette.js';
+registerClinicalProps();
+const q = new URLSearchParams(location.search);
+const names = (q.get('names') ?? 'bed').split(',');
+const states = (q.get('states') ?? '').split(',');
+const half = Number(q.get('h') ?? 2), gap = Number(q.get('gap') ?? 0.8), cols = Number(q.get('cols') ?? names.length);
+const at = (q.get('at') ?? '0,0.5,0').split(',').map(Number);
+const az = THREE.MathUtils.degToRad(Number(q.get('az') ?? 45)), el = THREE.MathUtils.degToRad(Number(q.get('el') ?? 32));
+const night = Number(q.get('night') ?? 0);
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.NeutralToneMapping;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(q.get('bg') ?? C.backdrop);
+const hemi = new THREE.HemisphereLight('#f4f8ff', '#e9d8d3', night ? 1 : 2.18);
+const sun = new THREE.DirectionalLight('#fff1dc', night ? 0.5 : 1.66);
+const a = THREE.MathUtils.degToRad(150), e = THREE.MathUtils.degToRad(50);
+sun.position.set(Math.sin(a) * Math.cos(e) * 40, Math.sin(e) * 40, -Math.cos(a) * Math.cos(e) * 40);
+sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.radius = 3; sun.shadow.bias = -0.0004;
+Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, far: 90 });
+scene.add(hemi, sun);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: q.get('floor') ?? C.tilePink, roughness: 0.85 }));
+ground.receiveShadow = true; scene.add(ground);
+const holder = new THREE.Group(); scene.add(holder);
+let x = 0, z = 0, row = 0, maxX = 0;
+const ticks = [];
+names.forEach((n, i) => {
+  const st = states[i];
+  const g = makeProp(n, st && CATALOG[n].bed ? { status: st.split(':')[0], alarm: st.split(':')[1] ?? null } : st ? { status: st, open: Number(st) } : {});
+  if (i && i % cols === 0) { z += row + gap; x = 0; row = 0; }
+  const [w, d] = CATALOG[n].fp;
+  g.position.set(x + w / 2, 0, z + d / 2);
+  x += w + gap; row = Math.max(row, d); maxX = Math.max(maxX, x);
+  holder.add(g);
+  if (g.userData.tick) ticks.push(g.userData.tick);
+  if (st && !CATALOG[n].bed && g.userData.setState) g.userData.setState({ status: st });
+});
+bakeStatic(holder);
+const cx = (maxX - gap) / 2 + at[0], cy = at[1], cz = (z + row) / 2 + at[2];
+const aspect = innerWidth / innerHeight;
+const camera = new THREE.OrthographicCamera(-half * aspect, half * aspect, half, -half, -100, 200);
+camera.position.set(cx + Math.sin(az) * Math.cos(el) * 60, cy + Math.sin(el) * 60, cz + Math.cos(az) * Math.cos(el) * 60);
+camera.lookAt(cx, cy, cz);
+let last = performance.now(), frames = 0;
+const speedup = Number(q.get('warp') ?? 1);
+const loop = (now) => {
+  const dt = Math.min((now - last) / 1000, 0.05) * speedup; last = now;
+  ticks.forEach((f) => f(dt, now / 1000, { night }));
+  renderer.render(scene, camera);
+  if (++frames === 3) window.__ready = true;
+  requestAnimationFrame(loop);
+};
+requestAnimationFrame(loop);
+</script>
+</body></html>

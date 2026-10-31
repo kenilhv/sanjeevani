@@ -1,0 +1,40 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>furniture stage</title></head><body>
+<script type="module">
+// /playground/furn.html?names=sofa,linenShelf&cols=4&space=4&zoom=2&night=0.8&state={"lights":true}&bake=1&az=45&rot=0
+// Screen-aligned layout (rows run across the isometric view), triangle report, night and state switches.
+import * as THREE from 'three';
+import { stage } from './stage.js';
+import { CATALOG, makeProp } from '../src/props/registry.js';
+import { bakeStatic } from '../src/style/kit.js';
+import { registerFurnitureProps } from '../src/props/furniture.js';
+import { registerOutdoorProps } from '../src/props/outdoor.js';
+registerFurnitureProps(); registerOutdoorProps();
+const q = new URLSearchParams(location.search), num = (k, d) => (q.has(k) ? Number(q.get(k)) : d);
+const names = q.get('names')?.split(',') ?? Object.keys(CATALOG).filter((n) => CATALOG[n].owner === (q.get('owner') ?? 'furniture'));
+const az = num('az', 45), night = num('night', 0), cols = num('cols', 4), space = num('space', 4), rot = num('rot', 0);
+const s = stage({ zoom: num('zoom', 2) * 0.5, floor: q.get('floor') ?? '#f5cbc1', azimuth: az, center: [0, num('cy', 0.6), 0] });
+s.scene.traverse((o) => { if (o.isLight) o.intensity *= 1 - night * 0.86; });
+if (night) { s.scene.background = new THREE.Color('#1c2740'); s.scene.traverse((o) => { if (o.isMesh) o.material.color.multiplyScalar(1 - night * 0.3); }); }
+const rad = THREE.MathUtils.degToRad(az), right = [Math.cos(rad), -Math.sin(rad)], down = [Math.sin(rad), Math.cos(rad)];
+const state = q.has('state') ? JSON.parse(q.get('state')) : null, ticks = [], rows = Math.ceil(names.length / cols);
+const report = [];
+names.forEach((n, i) => {
+  const g = makeProp(n, q.has('opts') ? JSON.parse(q.get('opts')) : {});
+  const u = (i % cols) - (cols - 1) / 2, v = Math.floor(i / cols) - (rows - 1) / 2;
+  const count = () => { let t = 0, m = 0; g.traverse((o) => { if (o.isMesh) { m++; t += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; } }); return [Math.round(t), m]; };
+  g.position.set((right[0] * u + down[0] * v) * space, 0, (right[1] * u + down[1] * v) * space);
+  g.rotation.y = THREE.MathUtils.degToRad(rot);
+  if (g.userData.setState && state) g.userData.setState(state);
+  const before = count();
+  bakeStatic(g);
+  const after = count();
+  report.push(`${n}: ${before[0]} tris, ${before[1]} meshes -> ${after[1]} draw`);
+  s.scene.add(g);
+  if (g.userData.tick) ticks.push(g.userData.tick);
+});
+console.log(report.join(' | '));
+const ctx = { night };
+s.run((dt, t) => ticks.forEach((f) => f(dt, t, ctx)));
+</script>
+</body></html>

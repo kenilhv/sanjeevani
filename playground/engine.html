@@ -1,0 +1,113 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>engine</title><link rel="icon" href="data:,">
+<style>
+html,body{margin:0;height:100%;background:#b7c3d3;overflow:hidden}
+#stage{position:fixed;inset:0}
+#bar{position:fixed;left:16px;bottom:16px;display:flex;gap:6px;flex-wrap:wrap;font:13px Inter,system-ui,sans-serif;max-width:60vw}
+#bar button{border:0;border-radius:10px;padding:7px 12px;background:rgba(255,255,255,.82);color:#2c2f38;cursor:pointer}
+#log{position:fixed;right:16px;bottom:16px;font:12px/1.5 ui-monospace,monospace;color:#2c2f38;background:rgba(255,255,255,.8);padding:8px 10px;border-radius:10px;white-space:pre}
+.tag{position:fixed;transform:translate(-50%,-100%);font:11px Inter,system-ui,sans-serif;background:#fff;color:#2c2f38;padding:2px 7px;border-radius:7px;pointer-events:none}
+</style></head><body>
+<div id="stage"></div><div id="bar"></div><div id="log"></div>
+<script type="module">
+// /playground/engine.html?mode=stack&hours=21&az=1&quality=high&zoom=2&intro=1
+// Coloured blocks on both plates: enough to check modes, rotation, night, picking and label projection.
+import * as THREE from 'three';
+import { createEngine } from '../src/engine/index.js';
+import { box, cyl, ball, contact, mat, matGlow, bakeStatic } from '../src/style/kit.js';
+import { C, THEMES } from '../src/style/palette.js';
+import { BUILDING, FLOOR_HEIGHT, ROOMS, SITE, WALL, ZONES, roomsOnFloor } from '../src/world/plan.js';
+
+const q = new URLSearchParams(location.search);
+const num = (k, d) => (q.has(k) ? Number(q.get(k)) : d);
+const engine = createEngine(document.getElementById('stage'), { quality: q.get('quality') || 'low' });
+const hidden = new THREE.MeshBasicMaterial({ visible: false });
+
+// Island.
+const G = engine.ground, sw = SITE.x1 - SITE.x0, sd = SITE.z1 - SITE.z0, scx = (SITE.x0 + SITE.x1) / 2, scz = (SITE.z0 + SITE.z1) / 2;
+G.add(box(sw, 2.4, sd, C.soil, { x: scx, y: -2.46, z: scz, r: 0.4 }), box(sw, 0.3, sd, C.grass, { x: scx, y: -0.3, z: scz, r: 0.12 }));
+for (const [name, col] of [['street', C.asphalt], ['spur', C.asphalt], ['apron', C.asphaltLight], ['plaza', C.paving], ['parking', C.asphaltLight], ['helipad', C.asphaltLight]]) {
+  const z = ZONES[name];
+  G.add(box(z.w, 0.04, z.d, col, { x: z.x + z.w / 2, y: -0.02, z: z.z + z.d / 2, r: 0.01 }));
+}
+for (let i = 0; i < 16; i++) {
+  const x = SITE.x0 + 2 + (i * 7.3) % 7, z = SITE.z0 + 2 + i * 2.5;
+  G.add(cyl(0.16, 0.2, 1.3, C.trunk, { x, z }), ball(1.1, C.hedge, { x, y: 2.1, z }), contact(1.8, 1.8));
+  G.children.at(-1).position.set(x, 0.02, z);
+}
+for (const [x, z] of [[-2, 28], [14, 28], [39, 28], [52, 12]]) G.add(cyl(0.06, 0.09, 3.6, C.steelDeep, { x, z }), ball(0.26, matGlow('#ffd9a0', 2.2), { x, y: 3.7, z }));
+
+// One plate: tiled floors, tall N and W walls, low S and E walls, partitions, a few blocks per room.
+function plate(parent, floor) {
+  parent.add(box(BUILDING.w, 0.2, BUILDING.d, C.curb, { x: BUILDING.w / 2, y: -0.2, z: BUILDING.d / 2, r: 0.05 }));
+  for (const r of roomsOnFloor(floor)) {
+    const t = THEMES[r.theme], R = r.rect, cx = R.x + R.w / 2, cz = R.z + R.d / 2;
+    parent.add(box(R.w - 0.04, 0.03, R.d - 0.04, t.tile[0], { x: cx, y: 0, z: cz, r: 0.008, shadow: false }));
+    const proxy = new THREE.Mesh(new THREE.BoxGeometry(R.w, 0.06, R.d), hidden);
+    proxy.position.set(cx, 0.03, cz); proxy.visible = false; proxy.userData.dynamic = true;
+    parent.add(proxy); engine.addPickable(proxy, { type: 'room', id: r.id });
+    for (let i = 0; i < 5; i++) {
+      const bx = R.x + 1.4 + ((i * 2.9 + R.x) % Math.max(1, R.w - 2.8)), bz = R.z + 1.4 + ((i * 2.3 + R.z) % Math.max(1, R.d - 2.8));
+      const colours = [t.accent, C.teal, C.blanketDeep, C.door, C.white];
+      parent.add(box(1.1, 0.5 + (i % 3) * 0.35, 1.5, colours[i], { x: bx, z: bz, r: 0.1 }));
+      const c = contact(1.2, 1.6); c.position.x = bx; c.position.z = bz; parent.add(c);
+    }
+    parent.add(box(R.w, WALL.partition, 0.14, t.wainscot, { x: cx, z: R.z + R.d, r: 0.03 }), box(0.14, WALL.partition, R.d, t.wainscot, { x: R.x + R.w, z: cz, r: 0.03 }));
+  }
+  const t = THEMES.corridor;
+  parent.add(box(BUILDING.w, 1.1, 0.22, t.wainscot, { x: BUILDING.w / 2, z: 0, r: 0.03 }), box(BUILDING.w, 0.14, 0.23, t.stripe, { x: BUILDING.w / 2, y: 1.1, z: 0, r: 0.02 }), box(BUILDING.w, 1.8, 0.2, t.upper, { x: BUILDING.w / 2, y: 1.24, z: 0, r: 0.02 }));
+  parent.add(box(0.22, 1.1, BUILDING.d, t.wainscot, { x: 0, z: BUILDING.d / 2, r: 0.03 }), box(0.23, 0.14, BUILDING.d, t.stripe, { x: 0, y: 1.1, z: BUILDING.d / 2, r: 0.02 }), box(0.2, 1.8, BUILDING.d, t.upper, { x: 0, y: 1.24, z: BUILDING.d / 2, r: 0.02 }));
+  parent.add(box(BUILDING.w, WALL.cut, 0.2, C.trim, { x: BUILDING.w / 2, z: BUILDING.d, r: 0.03 }), box(0.2, WALL.cut, BUILDING.d, C.trim, { x: BUILDING.w, z: BUILDING.d / 2, r: 0.03 }));
+  for (let i = 0; i < 4; i++) parent.add(box(0.5, 0.5, 0.06, matGlow('#ffe9b0', 1.8), { x: 5 + i * 8, y: 2, z: 0.16, r: 0.02 }));
+  bakeStatic(parent);
+  // A moving child, so the bake and dynamic path are exercised.
+  const spinner = box(0.6, 1.2, 0.6, floor ? C.coral : C.cartBlue, { x: 19, z: 13, r: 0.1 });
+  spinner.userData.dynamic = true; parent.add(spinner);
+  return spinner;
+}
+const spinners = [plate(engine.floors[0], 0), plate(engine.floors[1], 1)];
+
+// HTML labels fed through project(): they should stay glued to their spot through every mode and rotation.
+const labels = ROOMS.filter((r) => ['lobby', 'er', 'icu', 'ward_b'].includes(r.id)).map((r) => {
+  const el = document.createElement('div'); el.className = 'tag'; el.textContent = r.name; document.body.append(el);
+  return { r, el };
+});
+
+const log = document.getElementById('log'), events = [];
+const note = (s) => { events.push(s); if (events.length > 6) events.shift(); };
+engine.on('hover', (h) => note('hover ' + (h ? h.type + ':' + h.id : 'none')));
+engine.on('select', (h) => { note('select ' + (h ? h.type + ':' + h.id : 'none')); if (h) engine.pulse(h.point.x, h.point.y, h.point.z, C.teal); });
+engine.on('view', (v) => note(`view az${v.azimuthIndex} ${v.floorMode} ${v.zoom.toFixed(2)}`));
+
+let hours = num('hours', 10), sweep = 0;
+const bar = document.getElementById('bar');
+const btn = (t, f) => { const b = document.createElement('button'); b.textContent = t; b.onclick = f; bar.append(b); };
+btn('Ground', () => engine.setFloorMode('ground')); btn('Level 1', () => engine.setFloorMode('level1')); btn('Stack', () => engine.setFloorMode('stack'));
+btn('Q', () => engine.rotate(-1)); btn('E', () => engine.rotate(1)); btn('Reset', () => engine.resetView());
+btn('ER', () => engine.focusRoom('er')); btn('ICU', () => engine.focusRoom('icu'));
+btn('Dawn', () => { hours = 6.4; }); btn('Day', () => { hours = 11; }); btn('Golden', () => { hours = 17.3; }); btn('Dusk', () => { hours = 19.2; }); btn('Night', () => { hours = 22; });
+btn('Sweep', () => { sweep = sweep ? 0 : 1.5; }); btn('Intro', () => engine.intro()); btn('Pulse', () => engine.pulse(19, engine.floorY(0), 20, C.coral));
+btn('Auto', () => engine.setQuality('auto')); btn('High', () => engine.setQuality('high')); btn('Low', () => engine.setQuality('low'));
+
+let frames = 0;
+engine.onFrame((dt, t) => {
+  hours = (hours + sweep * dt) % 24;
+  engine.setHours(hours);
+  spinners.forEach((s, i) => { s.rotation.y = t * (i ? -0.9 : 0.9); });
+  for (const { r, el } of labels) {
+    const p = engine.project(r.rect.x + r.rect.w / 2, engine.floorY(r.floor) + 1.6, r.rect.z + r.rect.d / 2, r.floor);
+    el.style.display = p.visible ? '' : 'none';
+    el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
+  }
+  if (frames % 20 === 0) log.textContent = `${engine.stats.fps} fps  ${engine.stats.calls} calls  ${(engine.stats.tris / 1000).toFixed(0)}k tris\nq ${engine.stats.quality}  rung ${engine.stats.level}  dpr ${engine.stats.dpr}\nnight ${engine.ctx.night.toFixed(2)}  az ${engine.azimuthIndex}  ${engine.floorMode}\n${events.join('\n')}`;
+  if (++frames === 3) window.__ready = true;
+});
+
+if (q.has('mode')) engine.setFloorMode(q.get('mode'));
+window.__e = engine;
+engine.setHours(hours);
+engine.start();
+if (q.has('az')) engine.flyTo({ azimuthIndex: num('az', 0), duration: 0.01 });
+if (q.has('zoom')) engine.flyTo({ zoom: num('zoom', 1), duration: 0.01 });
+if (q.has('intro')) engine.intro();
+</script></body></html>

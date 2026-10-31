@@ -1,0 +1,50 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>clinical check</title>
+<style>body{font:12px/1.5 ui-monospace,monospace;margin:12px;white-space:pre}</style></head><body>
+<script type="module">
+// Audits every clinical prop without rendering: footprint, height, triangles, draw calls after baking, and bake safety.
+//   node tools/shot.mjs --url "/playground/clinical-check.html" --eval "window.__report"
+import * as THREE from 'three';
+import { CATALOG, makeProp, hasProp } from '../src/props/registry.js';
+import { bakeStatic } from '../src/style/kit.js';
+const q = new URLSearchParams(location.search);
+const mod = await import(q.get('mod') ?? '../src/props/clinical.js');
+mod.registerClinicalProps();
+const names = Object.keys(CATALOG).filter((n) => CATALOG[n].owner === 'clinical');
+const tris = (o) => { let t = 0; o.traverse((m) => { if (m.isMesh && m.geometry) t += (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3; }); return Math.round(t); };
+const rows = [], problems = [];
+for (const n of names) {
+  if (!hasProp(n)) { problems.push(`${n}: NOT REGISTERED`); continue; }
+  const meta = CATALOG[n];
+  try {
+    const g = makeProp(n, {});
+    const t = tris(g);
+    g.updateMatrixWorld(true);
+    const box = new THREE.Box3();
+    g.traverse((m) => {
+      if (!m.isMesh || m.userData.contact || !m.geometry) return;
+      const b = (m.geometry.boundingBox ?? (m.geometry.computeBoundingBox(), m.geometry.boundingBox)).clone().applyMatrix4(m.matrixWorld);
+      if (Number.isFinite(b.min.x)) box.union(b);
+    });
+    const [w, d] = meta.fp;
+    const over = [box.min.x + w / 2, w / 2 - box.max.x, box.min.z + d / 2, d / 2 - box.max.z, meta.h - box.max.y].map((v) => +v.toFixed(3));
+    const out = [over[0] < -0.012 && `-x ${-over[0]}`, over[1] < -0.012 && `+x ${-over[1]}`, over[2] < -0.012 && `-z ${-over[2]}`, over[3] < -0.012 && `+z ${-over[3]}`, over[4] < -0.03 && `h ${-over[4]}`].filter(Boolean);
+    const ticked = !!g.userData.tick;
+    g.userData.tick?.(0.016, 1, { night: 0 });
+    g.userData.setState?.({ status: 'occupied', alarm: 'critical', vitals: { hr: 80, spo2: 97 } });
+    g.userData.setState?.({ status: 'in-use', alarm: null });
+    g.userData.setState?.({ status: 'fault', alarm: null });
+    g.userData.tick?.(0.016, 1.016, { night: 0.5 });
+    const holder = new THREE.Group(); holder.add(g); bakeStatic(holder);
+    let calls = 0, dyn = 0; holder.traverse((m) => { if (m.isMesh) { calls++; if (!m.userData.baked) dyn++; } });
+    if (ticked && !holder.children.length) problems.push(`${n}: pruned away by bake`);
+    rows.push(`${n.padEnd(16)} tris ${String(t).padStart(5)}  calls ${String(calls).padStart(3)}  moving ${String(dyn).padStart(2)}  top ${box.max.y.toFixed(2)}/${meta.h}${out.length ? '  OVER ' + out.join(', ') : ''}`);
+    if (out.length) problems.push(`${n}: over ${out.join(', ')}`);
+    if (!ticked && !g.userData.setState && dyn) problems.push(`${n}: dynamic part without a tick`);
+  } catch (e) { problems.push(`${n}: THROW ${e.message}`); console.error(n, e); }
+}
+window.__report = { rows, problems };
+document.body.textContent = rows.join('\n') + '\n\nPROBLEMS\n' + (problems.join('\n') || 'none');
+window.__ready = true;
+</script>
+</body></html>

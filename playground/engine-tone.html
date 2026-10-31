@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>tone</title><link rel="icon" href="data:,">
+<style>body{margin:0;background:#b7c3d3;font:12px Inter,system-ui,sans-serif;color:#223}canvas{display:block}.r{display:flex;align-items:center;gap:8px;padding:3px 8px}.l{width:150px}</style>
+</head><body><div id="out"></div>
+<script type="module">
+// Swatch bench: the same lit palette patches through each tone mapper, next to the true palette.
+import * as THREE from 'three';
+import { C } from '../src/style/palette.js';
+const names = ['tilePink', 'tileMint', 'wainscot', 'stripe', 'upper', 'white', 'teal', 'blanket', 'door', 'leaf', 'coral', 'charcoal'];
+const W = 1080, H = 90, cell = W / names.length, out = document.getElementById('out');
+const row = (label, el) => { const d = document.createElement('div'); d.className = 'r'; d.innerHTML = `<div class="l">${label}</div>`; d.append(el); out.append(d); };
+const truth = document.createElement('canvas'); truth.width = W; truth.height = 60; const x = truth.getContext('2d');
+names.forEach((n, i) => { x.fillStyle = C[n]; x.fillRect(i * cell, 0, cell, 60); });
+row('palette', truth);
+const table = { palette: names.map((n) => C[n]) };
+const hex = (r, g, b) => '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
+for (const [label, tm, exposure, L] of [['ACES 1.05 (stage)', THREE.ACESFilmicToneMapping, 1.05, 1.13], ['ACES 1.3', THREE.ACESFilmicToneMapping, 1.3, 1.13], ['AgX 1.5', THREE.AgXToneMapping, 1.5, 1.13], ['Neutral 1.0', THREE.NeutralToneMapping, 1.0, 1.04]]) {
+  const r = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true });
+  r.setSize(W, H); r.toneMapping = tm; r.toneMappingExposure = exposure;
+  const s = new THREE.Scene(), cam = new THREE.OrthographicCamera(0, W, H, 0, -10, 10);
+  s.add(new THREE.AmbientLight('#ffffff', L * Math.PI));
+  names.forEach((n, i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(cell, H), new THREE.MeshStandardMaterial({ color: C[n], roughness: 1, metalness: 0, envMapIntensity: 0 })); m.position.set(i * cell + cell / 2, H / 2, 0); s.add(m); });
+  r.render(s, cam);
+  row(label, r.domElement);
+  const gl = r.getContext(), px = new Uint8Array(4);
+  table[label] = names.map((n, i) => { gl.readPixels(Math.floor(i * cell + cell / 2), 45, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); return hex(px[0], px[1], px[2]); });
+}
+window.__table = { names, ...table };
+window.__ready = true;
+</script></body></html>

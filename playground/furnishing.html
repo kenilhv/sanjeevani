@@ -1,0 +1,60 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>furnishing plan</title>
+<style>html,body{margin:0;background:#eef0f4;font:11px Inter,system-ui,sans-serif}canvas{display:block}</style></head><body>
+<canvas id="c"></canvas>
+<script type="module">
+// Top-down plan of the set dressing. /playground/furnishing.html?view=ground|level1|site
+import { FURNISHING } from '../src/world/furnishing.js';
+import { CATALOG } from '../src/props/registry.js';
+import { ROOMS, DOORS, PORTALS, ZONES, SITE, BUILDING } from '../src/world/plan.js';
+const view = new URLSearchParams(location.search).get('view') ?? 'ground';
+const cv = document.getElementById('c'), x = cv.getContext('2d');
+cv.width = innerWidth; cv.height = innerHeight;
+const site = view === 'site';
+const floor = view === 'level1' ? 1 : 0;
+const span = site ? { x0: SITE.x0, z0: SITE.z0, w: SITE.x1 - SITE.x0, d: SITE.z1 - SITE.z0 } : { x0: -0.5, z0: -0.5, w: BUILDING.w + 1, d: BUILDING.d + 1 };
+const s = Math.min(innerWidth / span.w, innerHeight / span.d);
+const X = (v) => (v - span.x0) * s, Z = (v) => (v - span.z0) * s;
+const rad = (d) => (d * Math.PI) / 180;
+const hue = (n) => [...n].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
+function prop(e, ox, oz) {
+  const m = CATALOG[e.p]; if (!m) return;
+  const [w, d] = m.fp;
+  x.save(); x.translate(X(ox + e.x), Z(oz + e.z)); x.rotate(rad(-e.r ?? 0) * -1 * -1);
+  x.fillStyle = m.nav === false ? `hsla(${hue(e.p)},60%,70%,.25)` : m.wall ? '#333' : `hsla(${hue(e.p)},55%,70%,.9)`;
+  x.strokeStyle = 'rgba(0,0,0,.45)'; x.lineWidth = 1;
+  x.fillRect(-w * s / 2, -d * s / 2, w * s, d * s); x.strokeRect(-w * s / 2, -d * s / 2, w * s, d * s);
+  if (!m.wall) { x.fillStyle = 'rgba(0,0,0,.55)'; x.fillRect(-w * s / 2, d * s / 2 - 2.5, w * s, 2.5); } // front edge marker
+  x.restore();
+  if (m.use) { const c = Math.cos(rad(e.r)), n = Math.sin(rad(e.r)); x.fillStyle = '#e33'; x.fillRect(X(ox + e.x + m.use[0] * c + m.use[1] * n) - 2, Z(oz + e.z - m.use[0] * n + m.use[1] * c) - 2, 4, 4); }
+  for (const q of m.seats ?? []) { const c = Math.cos(rad(e.r)), n = Math.sin(rad(e.r)); x.fillStyle = '#16a'; x.fillRect(X(ox + e.x + q[0] * c + q[1] * n) - 2, Z(oz + e.z - q[0] * n + q[1] * c) - 2, 4, 4); }
+  if (s > 14 && !m.wall) { x.fillStyle = '#111'; x.font = '10px Inter,system-ui'; x.textAlign = 'center'; x.fillText(e.id ?? e.p, X(ox + e.x), Z(oz + e.z) + 3); }
+  if (m.wall) { x.fillStyle = '#a0a'; x.font = '9px Inter,system-ui'; x.textAlign = 'center'; x.fillText(e.o?.text ?? e.p, X(ox + e.x), Z(oz + e.z) + (e.r === 0 ? 12 : -6)); }
+}
+x.fillStyle = '#bfe3a8'; x.fillRect(X(SITE.x0), Z(SITE.z0), (SITE.x1 - SITE.x0) * s, (SITE.z1 - SITE.z0) * s);
+if (site) for (const [k, z] of Object.entries(ZONES)) {
+  x.fillStyle = { street: '#889', spur: '#99a', apron: '#aab', dropoff: '#aab', plaza: '#eee2cf', parking: '#bbc', helipad: '#cdd', garden: '#a8dc9c' }[k];
+  x.fillRect(X(z.x), Z(z.z), z.w * s, z.d * s); x.fillStyle = '#334'; x.font = '10px Inter,system-ui'; x.textAlign = 'left'; x.fillText(k, X(z.x) + 3, Z(z.z) + 11);
+}
+for (const r of ROOMS.filter((r) => r.floor === floor)) {
+  x.fillStyle = '#fff'; x.fillRect(X(r.rect.x), Z(r.rect.z), r.rect.w * s, r.rect.d * s);
+  x.strokeStyle = '#223'; x.lineWidth = 2; x.strokeRect(X(r.rect.x), Z(r.rect.z), r.rect.w * s, r.rect.d * s);
+  x.fillStyle = 'rgba(0,0,60,.35)'; x.font = '12px Inter,system-ui'; x.textAlign = 'left'; x.fillText(r.id, X(r.rect.x) + 5, Z(r.rect.z) + r.rect.d * s - 5);
+}
+for (const d of DOORS.filter((d) => d.floor === floor)) {
+  x.strokeStyle = '#fc0'; x.lineWidth = 5; x.beginPath();
+  if (d.axis === 'x') { x.moveTo(X(d.x - d.w / 2), Z(d.z)); x.lineTo(X(d.x + d.w / 2), Z(d.z)); } else { x.moveTo(X(d.x), Z(d.z - d.w / 2)); x.lineTo(X(d.x), Z(d.z + d.w / 2)); }
+  x.stroke();
+}
+for (const p of PORTALS) { x.fillStyle = '#ccd'; if (p.kind === 'lift') x.fillRect(X(p.x - 1.2), Z(p.z - 1.4), 2.4 * s, 2.8 * s); else x.fillRect(X(p.x - p.w / 2), Z(p.z - p.d / 2), p.w * s, p.d * s); }
+for (const r of ROOMS.filter((r) => r.floor === floor)) for (const e of FURNISHING[r.id] ?? []) prop(e, r.rect.x, r.rect.z);
+if (site) {
+  const paths = [[[-0.2, 27.6], [-3.4, 27.2], [-5.2, 23.5], [-3.6, 19.5], [-5.8, 14.5], [-3.6, 10], [-5.4, 5], [-3.8, 0.4], [-3.6, -2.2], [2, -2.6]], [[2, -2.6], [14, -2.3], [26, -2.7], [38, -2.4], [41.4, -2]], [[38.75, -2.3], [38.8, 3], [38.75, 8], [38.8, 14.2]], [[-5.2, 23.5], [-7.2, 26.6], [-6.5, 31], [-3.8, 33.4]], [[-5.8, 14.5], [-7.4, 11.8], [-7.2, 7.2], [-5.4, 5]], [[24, 28.8], [24.2, 31], [24, 33.5]], [[38, 27.5], [40.5, 27.6], [43.2, 27.8]]];
+  x.lineCap = 'round'; x.strokeStyle = '#efe6d8'; x.lineWidth = 1.05 * s;
+  for (const p of paths) { x.beginPath(); x.moveTo(X(p[0][0]), Z(p[0][1])); for (let i = 1; i < p.length - 1; i++) x.quadraticCurveTo(X(p[i][0]), Z(p[i][1]), (X(p[i][0]) + X(p[i + 1][0])) / 2, (Z(p[i][1]) + Z(p[i + 1][1])) / 2); x.lineTo(X(p[p.length - 1][0]), Z(p[p.length - 1][1])); x.stroke(); }
+  x.fillStyle = '#9fdbe6'; x.beginPath(); x.ellipse(X(-2.6), Z(16.2), 1.5 * s, 2.3 * s, 0.22, 0, 7); x.fill();
+  x.fillStyle = '#8b93a3'; x.beginPath(); x.moveTo(X(-3.8), Z(33.8)); x.bezierCurveTo(X(-1.4), Z(33.8), X(-0.6), Z(29), X(2.6), Z(29)); x.lineTo(X(15.2), Z(29)); x.bezierCurveTo(X(18.2), Z(29), X(18.8), Z(33.8), X(21.4), Z(33.8)); x.lineTo(X(12.9), Z(33.8)); x.bezierCurveTo(X(12), Z(33.1), X(11.7), Z(32.2), X(10.6), Z(32.2)); x.lineTo(X(6.2), Z(32.2)); x.bezierCurveTo(X(5.1), Z(32.2), X(4.9), Z(33.1), X(4.1), Z(33.8)); x.closePath(); x.fill();
+  for (const e of FURNISHING.exterior) prop(e, 0, 0);
+}
+window.__ready = true;
+</script></body></html>

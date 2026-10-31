@@ -1,0 +1,18 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>props</title></head><body>
+<script type="module">
+// /playground/props.html?owner=clinical&zoom=1.2&cols=8   or   ?names=bed,ivStand&zoom=3
+import { stage } from './stage.js';
+import { CATALOG, makeProp, hasProp } from '../src/props/registry.js';
+import { registerClinicalProps } from '../src/props/clinical.js';
+import { registerFurnitureProps } from '../src/props/furniture.js';
+import { registerOutdoorProps } from '../src/props/outdoor.js';
+registerClinicalProps(); registerFurnitureProps(); registerOutdoorProps();
+const q = new URLSearchParams(location.search);
+const names = q.get('names')?.split(',') ?? Object.keys(CATALOG).filter((n) => !q.get('owner') || CATALOG[n].owner === q.get('owner'));
+const s = stage({ zoom: Number(q.get('zoom') ?? 1) * 0.5, floor: q.get('floor') ?? '#f5cbc1', azimuth: Number(q.get('az') ?? 45) });
+s.grid(names.map((n) => makeProp(n, {})), { cols: Number(q.get('cols') ?? 7), gap: Number(q.get('gap') ?? 1.4) });
+console.log('built:', names.filter(hasProp).length, 'of', names.length, 'missing:', names.filter((n) => !hasProp(n)).join(','));
+s.run();
+</script>
+</body></html>

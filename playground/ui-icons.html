@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="/src/style/fonts.css">
+<style>body{margin:0;padding:24px;background:#f4f2ee;font:12px Inter Variable,sans-serif;color:#2c2f38;display:grid;grid-template-columns:repeat(9,1fr);gap:14px}
+div{display:flex;flex-direction:column;align-items:center;gap:6px}svg{width:64px;height:64px;display:block}</style>
+<script type="module">import {icons} from '/src/ui/icons.js';
+for(const [k,v] of Object.entries(icons)){const d=document.createElement('div');d.innerHTML=v+`<span>${k}</span>`;document.body.append(d)}
+window.__ready=true</script>

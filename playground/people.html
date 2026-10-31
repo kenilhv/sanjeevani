@@ -1,0 +1,130 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>people</title></head><body>
+<script type="module">
+// /playground/people.html?mode=roles|anims|crowd|flow|vehicles&zoom=3&az=45
+import * as THREE from 'three';
+import { stage } from './stage.js';
+import { C } from '../src/style/palette.js';
+import { makeProp, hasProp } from '../src/props/registry.js';
+import { registerClinicalProps } from '../src/props/clinical.js';
+import { registerFurnitureProps } from '../src/props/furniture.js';
+import { registerOutdoorProps } from '../src/props/outdoor.js';
+import { createPeople } from '../src/people/index.js';
+
+registerClinicalProps(); registerFurnitureProps(); registerOutdoorProps();
+const q = new URLSearchParams(location.search), mode = q.get('mode') ?? 'roles';
+const zoom = Number(q.get('zoom') ?? { roles: 2.3, anims: 1.55, crowd: 0.42, flow: 0.42, vehicles: 0.3 }[mode]);
+const az = Number(q.get('az') ?? 45);
+const s = stage({ zoom, center: mode === 'anims' ? [0.4, 0.7, 0.4] : [0, 0.7, 0], azimuth: az, floor: q.get('floor') ?? C.tilePink });
+const floors = [new THREE.Group(), new THREE.Group()], ground = new THREE.Group();
+s.scene.add(ground, ...floors);
+const engine = {
+  scene: s.scene, camera: s.camera, renderer: s.renderer, root: s.scene, ground, floors, ctx: { night: 0 },
+  floorVisible: () => true, floorY: () => 0, addPickable() {}, removePickable() {},
+};
+const people = createPeople(engine);
+
+const actors = [], vehicles = [], routes = new Map(), beds = new Map();
+const add = (o) => {
+  const a = { id: `a${actors.length}`, kind: 'staff', role: 'nurse', floor: 0, x: 0, z: 0, y: 0, heading: 0, anim: 'idle', speed: 0, task: '', roomId: null, status: 'ok', bubble: null, hidden: false, seed: actors.length * 7.31 + 1.7, ...o };
+  actors.push(a); return a;
+};
+const ROLES = ['nurse', 'doctor', 'surgeon', 'tech', 'porter', 'paramedic', 'cleaner', 'reception', 'pharmacist', 'patient', 'visitor'];
+const kindOf = (r) => (r === 'patient' ? 'patient' : r === 'visitor' ? 'visitor' : 'staff');
+const across = (i, n, gap) => { const k = (i - (n - 1) / 2) * gap; return { x: k * Math.SQRT1_2, z: -k * Math.SQRT1_2 }; };
+const facing = Math.PI / 4;
+const movers = [], rolling = [];
+
+if (mode === 'roles') {
+  ROLES.forEach((role, i) => add({ role, kind: kindOf(role), ...across(i, ROLES.length, 0.92), heading: facing, seed: 3.1 + i * 2.7 }));
+  ROLES.forEach((role, i) => { const p = across(i, ROLES.length, 0.92); add({ role, kind: kindOf(role), x: p.x - 1.5, z: p.z - 1.5, heading: facing + (i % 2 ? 2.2 : -1.3), seed: 40.7 + i * 5.3 }); });
+}
+if (mode === 'anims') {
+  const prop = (name, x, z, r, o) => { if (!hasProp(name)) return; const g = makeProp(name, o); g.position.set(x, 0, z); g.rotation.y = r; s.scene.add(g); return g; };
+  const row = [
+    { anim: 'idle', role: 'doctor' }, { anim: 'walk', role: 'nurse' }, { anim: 'run', role: 'paramedic' }, { anim: 'push', role: 'porter' },
+    { anim: 'talk', role: 'doctor', bubble: 'chat' }, { anim: 'work', role: 'cleaner' }, { anim: 'work', role: 'nurse' }, { anim: 'work', role: 'tech' },
+  ];
+  row.forEach((o, i) => {
+    const p = across(i, row.length, 1.15), a = add({ ...o, ...p, heading: facing, kind: kindOf(o.role), seed: 11 + i * 3.3 });
+    if (o.anim === 'walk' || o.anim === 'run' || o.anim === 'push') movers.push({ a, c: p, r: 0.42, w: (o.anim === 'run' ? 3 : 1.3) / 0.42, t: i });
+  });
+  const seat = across(0, 1, 1), behind = (x, z) => ({ x: x - 1.5, z: z - 1.5 });
+  const sp = behind(...Object.values(across(-1.2, 4, 1.15)));
+  prop('chair', sp.x, sp.z, facing); add({ role: 'visitor', kind: 'visitor', anim: 'sit', x: sp.x, z: sp.z, heading: facing, bubble: 'heart', seed: 8.2 });
+  const so = behind(...Object.values(across(1, 4, 1.15)));
+  prop('waitingRow', so.x, so.z, facing);
+  add({ role: 'patient', kind: 'patient', anim: 'sit', x: so.x + Math.cos(facing) * 0.0, z: so.z, heading: facing, seed: 23.1 });
+  const be = behind(...Object.values(across(3.1, 4, 1.15)));
+  const bed = prop('bed', be.x, be.z, facing, { status: 'occupied' });
+  bed?.userData.settle?.();
+  beds.set('B1', { id: 'B1', x: be.x, z: be.z, status: 'occupied' });
+  add({ role: 'patient', kind: 'patient', anim: 'lie', x: be.x, z: be.z, y: 0.6, heading: facing, bedId: 'B1', bubble: 'zzz', seed: 31.3 });
+  const cp = behind(...Object.values(across(5, 4, 1.15)));
+  const c2 = prop('bed', cp.x, cp.z, facing, { status: 'occupied' }); c2?.userData.settle?.();
+  beds.set('B2', { id: 'B2', x: cp.x, z: cp.z, status: 'occupied' });
+  add({ role: 'patient', kind: 'patient', anim: 'lie', x: cp.x, z: cp.z, y: 0.6, heading: facing, bedId: 'B2', bubble: 'alert', status: 'critical', seed: 2.3 });
+  add({ role: 'nurse', anim: 'cpr', x: cp.x + 0.75, z: cp.z - 0.7, heading: facing - Math.PI / 2 - 0.2, seed: 9.9 });
+  void seat;
+  // A patient wheeled feet first with a porter following in their footsteps, and a wheelchair ride.
+  const line = (k, off) => ({ x: (k + off) * Math.SQRT1_2 + 1.6, z: (k - off) * Math.SQRT1_2 + 1.6 });
+  const g = add({ role: 'patient', kind: 'patient', anim: 'lie', y: 0.6, heading: facing, _followers: [1], seed: 17.7, ...line(0, -1.2) });
+  const porter = add({ role: 'porter', anim: 'push', heading: facing, seed: 5.9, ...line(-1.25, -1.2) });
+  const w = add({ role: 'patient', kind: 'patient', anim: 'sit', heading: facing, _followers: [1], seed: 44.1, ...line(0, 1.2) });
+  const po2 = add({ role: 'nurse', anim: 'push', heading: facing, seed: 15.2, ...line(-1.05, 1.2) });
+  rolling.push({ a: g, b: porter, off: -1.2, lag: 1.25 }, { a: w, b: po2, off: 1.2, lag: 0.95 });
+}
+const wander = (a) => {
+  const v = a.anim === 'run' ? 3 : a.kind === 'patient' ? 0.8 : 1.35, t = { x: (Math.random() - 0.5) * 34, z: (Math.random() - 0.5) * 24 };
+  a._t = t; a._v = v; a.anim = a.anim === 'run' ? 'run' : 'walk';
+};
+if (mode === 'crowd' || mode === 'flow') {
+  for (let i = 0; i < 80; i++) {
+    const role = ROLES[i % ROLES.length], a = add({ role, kind: kindOf(role), x: (Math.random() - 0.5) * 34, z: (Math.random() - 0.5) * 24, anim: i % 9 === 8 ? 'run' : 'walk', bubble: i % 7 === 0 ? ['call', 'heart', 'pill', 'zzz', 'alert', 'chat'][i % 6] : null, seed: i * 3.7 + 0.3 });
+    wander(a);
+  }
+  if (mode === 'flow') people.setLayer('flow', true);
+}
+if (mode === 'vehicles') {
+  vehicles.push({ id: 'amb', type: 'ambulance', x: -12, y: 0, z: 0, heading: Math.PI / 2, lights: true, doors: false, rotor: 0, scale: 1 });
+  vehicles.push({ id: 'car', type: 'car', x: 2, y: 0, z: 6, heading: 0, lights: false, doors: false, rotor: 0, scale: 1 });
+  vehicles.push({ id: 'heli', type: 'helicopter', x: 12, y: 2, z: -2, heading: 0.6, lights: false, doors: false, rotor: 1, scale: 1 });
+}
+const twin = {
+  actors, vehicles, beds,
+  routeOf(id) {
+    const a = actors.find((b) => b.id === id); if (!a?._t) return [];
+    const mx = a.x + (a._t.x - a.x) * 0.5;
+    return [{ x: mx, z: a.z }, { x: mx, z: a._t.z }, { x: a._t.x, z: a._t.z }];
+  },
+};
+let simT = 0, simAcc = 0;
+const STEP = 0.2;
+function stepSim(h) {
+  simT += h;
+  for (const m of movers) {
+    const th = simT * m.w + m.t;
+    m.a.x = m.c.x + Math.sin(th) * m.r; m.a.z = m.c.z + Math.cos(th) * m.r; m.a.heading = th + Math.PI / 2;
+  }
+  for (const r of rolling) {
+    const k = Math.sin(simT * 0.45) * 0.8, dir = Math.cos(simT * 0.45) >= 0 ? 1 : -1, place = (kk) => ({ x: (kk + r.off) * Math.SQRT1_2 + 1.6, z: (kk - r.off) * Math.SQRT1_2 + 1.6 });
+    Object.assign(r.a, place(k)); Object.assign(r.b, place(k - r.lag * dir));
+    r.a.heading = r.b.heading = dir > 0 ? facing : facing + Math.PI;
+  }
+  for (const a of actors) {
+    if (!a._t) continue;
+    const dx = a._t.x - a.x, dz = a._t.z - a.z, d = Math.hypot(dx, dz);
+    if (d < 0.3) { wander(a); continue; }
+    a.x += (dx / d) * a._v * h; a.z += (dz / d) * a._v * h; a.heading = Math.atan2(dx, dz);
+  }
+}
+if (q.has('select')) people.highlight(`a${q.get('select')}`);
+for (let i = 0; i < 4; i++) stepSim(0);
+window.__people = people; window.__s = s;
+s.run((dt, t) => {
+  simAcc += dt;
+  while (simAcc >= STEP) { simAcc -= STEP; stepSim(STEP); }
+  people.update(dt, t, twin);
+});
+</script>
+</body></html>
