@@ -167,9 +167,8 @@ export function createEngine(container, { quality = 'auto' } = {}) {
     flyTo: (o) => { rig.poke(); return rig.flyTo(o); },
     focusRoom(id, { zoom, duration } = {}) {
       const room = roomById(id);
-      if (!room) return Promise.resolve();
-      if (room.floor === 1 && plates.mode === 'ground') setFloorMode('level1');
-      if (room.floor === 0 && plates.mode === 'level1') setFloorMode('ground');
+      // Only Level 1 is shown, so ground-floor rooms have nothing to fly to.
+      if (!room || room.floor !== 1) return Promise.resolve();
       const r = room.rect;
       rig.poke();
       return rig.flyTo({ x: r.x + r.w / 2, y: plates.goalY(room.floor) + 0.5, z: r.z + r.d / 2, zoom: zoom ?? rig.fitRect(r), duration });

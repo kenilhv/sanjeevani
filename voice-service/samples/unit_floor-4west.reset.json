@@ -1,0 +1,45 @@
+{
+  "actor": "unit:floor-4west",
+  "method": "reset",
+  "input": {},
+  "response": {
+    "ok": true
+  },
+  "emits": [
+    {
+      "kind": "clock",
+      "simTime": "19:00",
+      "speed": 1
+    },
+    {
+      "kind": "room.status",
+      "room": "room-2",
+      "status": "stable",
+      "owner": null
+    },
+    {
+      "kind": "room.status",
+      "room": "room-4",
+      "status": "stable",
+      "owner": null
+    },
+    {
+      "kind": "room.status",
+      "room": "room-6",
+      "status": "stable",
+      "owner": null
+    },
+    {
+      "kind": "room.status",
+      "room": "room-8",
+      "status": "stable",
+      "owner": null
+    },
+    {
+      "kind": "room.status",
+      "room": "room-3",
+      "status": "stable",
+      "owner": null
+    }
+  ]
+}

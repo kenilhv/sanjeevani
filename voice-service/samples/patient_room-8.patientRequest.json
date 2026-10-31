@@ -1,0 +1,30 @@
+{
+  "actor": "patient:room-8",
+  "method": "patientRequest",
+  "input": {
+    "text": "I feel shaky.",
+    "simTime": "02:00"
+  },
+  "response": {
+    "ok": true,
+    "forwardedTo": "nurse-pod-a"
+  },
+  "emits": [
+    {
+      "kind": "agent.message",
+      "from": "twin-room-8",
+      "to": "nurse-pod-a",
+      "type": "patient.request",
+      "level": "urgent",
+      "text": "Patient says 'I feel shaky.'. She's diabetic: glargine 22 units at 21:00 and she ate little at dinner. Check glucose?",
+      "simTime": "23:30"
+    },
+    {
+      "kind": "room.status",
+      "room": "room-8",
+      "status": "warning",
+      "owner": "maya",
+      "label": "Patient: \"I feel shaky.\""
+    }
+  ]
+}

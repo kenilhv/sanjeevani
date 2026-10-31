@@ -1,0 +1,56 @@
+{
+  "actor": "unit:floor-4west",
+  "method": "setClock",
+  "input": {
+    "simTime": "06:45",
+    "speed": 1
+  },
+  "response": {
+    "simTime": "06:45",
+    "speed": 1
+  },
+  "emits": [
+    {
+      "kind": "clock",
+      "simTime": "06:45",
+      "speed": 1
+    },
+    {
+      "kind": "agent.message",
+      "from": "twin-room-2",
+      "to": "nurse-pod-a",
+      "type": "handoff.section",
+      "text": "Watcher. Pneumonia; SBP fell to 98, 500 mL bolus at 04:10, now 106/64. Lactate pending. Recheck BP at 08:00.",
+      "simTime": "06:45"
+    },
+    {
+      "kind": "agent.message",
+      "from": "twin-room-4",
+      "to": "nurse-pod-a",
+      "type": "handoff.section",
+      "text": "Stable. POD 1 knee. 03:00 KCl given late, charted. Pain 7 to 3. Repeat K⁺ with 06:00 labs, PT at 10:00.",
+      "simTime": "06:45"
+    },
+    {
+      "kind": "agent.message",
+      "from": "twin-room-6",
+      "to": "nurse-pod-a",
+      "type": "handoff.section",
+      "text": "Stable, high fall risk. Zolpidem 5 mg at 23:30. Bed alarm on, hourly rounds, no falls.",
+      "simTime": "06:45"
+    },
+    {
+      "kind": "agent.message",
+      "from": "twin-room-8",
+      "to": "nurse-pod-a",
+      "type": "handoff.section",
+      "text": "Stable. Hypoglycemia 62 at 02:00, juice, 108 at 02:15. Endocrine to review the glargine dose.",
+      "simTime": "06:45"
+    },
+    {
+      "kind": "clock",
+      "simTime": "06:45",
+      "speed": 1
+    }
+  ]
+}

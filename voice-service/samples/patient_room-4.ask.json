@@ -1,0 +1,13 @@
+{
+  "actor": "patient:room-4",
+  "method": "ask",
+  "input": {
+    "question": "Did pain improve?",
+    "askedBy": "jordan"
+  },
+  "response": {
+    "answer": "Pain was 7 out of 10 at 22:00, so Maya gave oxycodone 5 mg. At the 23:00 recheck it was 3, and she slept after that.",
+    "room": "room-4"
+  },
+  "emits": []
+}

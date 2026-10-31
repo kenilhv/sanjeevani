@@ -1,0 +1,39 @@
+{
+  "actor": "pod:pod-a",
+  "method": "getState",
+  "input": {},
+  "response": {
+    "pod": "pod-a",
+    "rooms": [
+      "room-2",
+      "room-4",
+      "room-6",
+      "room-8"
+    ],
+    "currentNurse": "jordan",
+    "alertQueue": [
+      {
+        "room": "room-2",
+        "level": "warning",
+        "text": "SBP falling, meets sepsis screen"
+      },
+      {
+        "room": "room-6",
+        "level": "warning",
+        "text": "Zolpidem + high fall risk"
+      },
+      {
+        "room": "room-8",
+        "level": "warning",
+        "text": "Patient: \"I feel shaky.\""
+      }
+    ],
+    "todo": [
+      "06:00 vitals + morning labs (BMP, CBC)",
+      "Room 4: repeat K⁺",
+      "Room 2: recheck BP 08:00",
+      "Room 6: hourly fall rounds"
+    ]
+  },
+  "emits": []
+}

@@ -900,7 +900,7 @@ prop('wallClock', () => {
 });
 prop('wallSign', (o = {}) => {
   const g = group(soft(1.4, 0.4, 0.05, o.accent ?? C.teal, { r: 0.05 }));
-  g.add(panel(1.35, 0.35, sign(o.text ?? 'Haven General', { w: 620, h: 160, bg: o.bg ?? C.white, fg: o.fg ?? C.ink, radius: 30 }), { y: 0.025, z: 0.0262 }));
+  g.add(panel(1.35, 0.35, sign(o.text ?? 'Sanjeevani', { w: 620, h: 160, bg: o.bg ?? C.white, fg: o.fg ?? C.ink, radius: 30 }), { y: 0.025, z: 0.0262 }));
   return g;
 });
 const heartGeo = () => once('heart3d', () => {

@@ -1,0 +1,51 @@
+{
+  "actor": "pod:pod-a",
+  "method": "voiceNote",
+  "input": {
+    "transcript": "Room 6, gave zolpidem 5 milligrams for sleep.",
+    "nurseId": "maya",
+    "simTime": "23:30"
+  },
+  "response": {
+    "routed": [
+      {
+        "room": "room-6",
+        "text": "gave zolpidem 5 milligrams for sleep"
+      }
+    ]
+  },
+  "emits": [
+    {
+      "kind": "agent.message",
+      "from": "nurse-pod-a",
+      "to": "twin-room-6",
+      "type": "note.new",
+      "text": "gave zolpidem 5 milligrams for sleep",
+      "simTime": "23:30"
+    },
+    {
+      "kind": "agent.message",
+      "from": "twin-room-6",
+      "to": "nurse-pod-a",
+      "type": "note.ack",
+      "text": "Logged as AI draft: zolpidem 5 mg PO at 23:30. Fall-rounds alarm set hourly until 06:00.",
+      "simTime": "23:30"
+    },
+    {
+      "kind": "agent.message",
+      "from": "twin-room-6",
+      "to": "nurse-pod-a",
+      "type": "alert",
+      "level": "urgent",
+      "text": "Zolpidem at 81 with Morse fall score 65 is Beers high-risk. Bed alarm on, call light in reach?",
+      "simTime": "23:30"
+    },
+    {
+      "kind": "room.status",
+      "room": "room-6",
+      "status": "warning",
+      "owner": "maya",
+      "label": "Fall risk + sleeping pill"
+    }
+  ]
+}

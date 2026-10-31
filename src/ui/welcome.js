@@ -4,7 +4,7 @@ import { icons as I } from './icons.js';
 
 export function createWelcome(ui, { onTour, onLook }) {
   const words = ['Your', 'hospital,', 'alive.'];
-  const node = el(`<div class="hv-welcome" role="dialog" aria-label="Welcome to Haven General">
+  const node = el(`<div class="hv-welcome" role="dialog" aria-label="Welcome to Sanjeevani">
     <div class="hv-welcome-in">
       <h1>${words.map((w, i) => `<span style="--i:${i}">${w}</span>`).join(' ')}</h1>
       <p>Every bed, every patient, every team, in one calm picture.</p>

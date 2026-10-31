@@ -1,5 +1,5 @@
 // 3D-anchored labels: pooled DOM moved with transform only, recomputed every frame.
-import { el, esc, setText, roomName, publicRooms, plural, ROLE, reasonOf } from './util.js';
+import { el, esc, setText, roomName, publicRooms, hiddenRooms, plural, ROLE, reasonOf } from './util.js';
 import { icons as I } from './icons.js';
 import { roomCentre, FLOOR_HEIGHT } from '../world/plan.js';
 
@@ -50,10 +50,11 @@ export function createLabels(ui) {
     return { ...l, id: r.id, floor: r.floor, x: c.x, z: c.z, pill: l.n.firstElementChild, count: l.n.querySelector('small') };
   });
   let beds = [];
+  const shownBeds = () => [...(twin.beds?.values() ?? [])].filter((b) => !hiddenRooms.has(b.roomId));
   const syncBeds = () => {
-    if (!twin.beds || beds.length === twin.beds.size) return;
+    if (!twin.beds || beds.length === shownBeds().length) return;
     for (const b of beds) b.n.remove();
-    beds = [...twin.beds.values()].map((b) => {
+    beds = shownBeds().map((b) => {
       const l = mk(`<span class="hv-lbed"></span>`);
       return { ...l, b, dot: l.n.firstElementChild };
     });
@@ -125,7 +126,7 @@ export function createLabels(ui) {
       // Alarmed beds claim beacons at 3 Hz; the beacons track them every frame.
       let i = 0;
       for (const b of twin.beds?.values?.() ?? []) {
-        if (!b.alarm || i >= beacons.length) continue;
+        if (!b.alarm || i >= beacons.length || hiddenRooms.has(b.roomId)) continue;
         const l = beacons[i++];
         l.bed = b;
         if (l.face.dataset.s !== b.alarm) l.face.dataset.s = b.alarm;

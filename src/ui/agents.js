@@ -11,22 +11,39 @@ const CREW = [
   { k: 'imag', name: 'Imaging', icon: 'scan', tint: C.purple },
   { k: 'facil', name: 'Facilities', icon: 'wrench', tint: C.watch },
 ];
-const who = (name) => {
-  const s = String(name ?? '').toLowerCase();
-  return CREW.find((c) => s.startsWith(c.k) || s.includes(c.k)) ?? { k: s, name: name ?? 'Team', icon: 'spark', tint: C.steel };
-};
+// Live mode: the Sanjeevani agents on Agent Relay. Each Patient Twin speaks for one room; the Nurse Agent runs the pod.
+const LIVE_CREW = [
+  { k: 'nurse-pod-a', name: 'Ward A Nurse Agent', tile: 'Ward A', icon: 'people', tint: C.info },
+  { k: 'twin-room-2', name: 'Room 2 Twin', tile: 'Room 2', icon: 'bed', tint: C.coral },
+  { k: 'twin-room-4', name: 'Room 4 Twin', tile: 'Room 4', icon: 'bed', tint: C.teal },
+  { k: 'twin-room-6', name: 'Room 6 Twin', tile: 'Room 6', icon: 'bed', tint: C.watch },
+  { k: 'twin-room-8', name: 'Room 8 Twin', tile: 'Room 8', icon: 'bed', tint: C.purple },
+  { k: 'nurse-pod-b', name: 'Ward B Nurse Agent', tile: 'Ward B', icon: 'people', tint: C.leafLight },
+];
 const ag = (c) => `<span class="hv-ag" data-a="${c.k}" style="--t:${c.tint}" title="${esc(c.name)}">${I[c.icon]}</span>`;
 const MAX_NODES = 40;
 
 export function createAgents(ui) {
   const { twin, root } = ui;
+  const crewList = twin.live ? LIVE_CREW : CREW;
+  const label = twin.live?.label ?? ((n) => n ?? 'Team');
+  const who = (name) => {
+    const s = String(name ?? '').toLowerCase();
+    // Live mode: people in the conversation (the nurse on shift, a patient at the bedside) get a person avatar.
+    const person = twin.live && (s.startsWith('bedside-') || ['maya', 'jordan', 'sam'].includes(s));
+    return crewList.find((c) => s.startsWith(c.k) || s.includes(c.k))
+      ?? { k: s, name: label(name), icon: person ? 'user' : 'spark', tint: person ? (s.startsWith('bedside-') ? C.coral : C.leaf ?? C.teal) : C.steel };
+  };
+  const blurb = twin.live
+    ? 'Every patient has a Twin and every ward a Nurse Agent. They talk to each other, and every message is kept on record.'
+    : "Six helpers quietly sorting things out, so people don't have to phone around.";
   const chip = el(`<button type="button" class="hv-agents-chip hv-glass hv-enter hv-press" aria-expanded="false" aria-label="Agent network">
-    <span class="hv-stack">${CREW.map(ag).join('')}</span>
+    <span class="hv-stack">${crewList.map(ag).join('')}</span>
     <span class="hv-agents-meta">Agent network<small><i class="hv-live"></i>Working together</small></span>
   </button>`);
   const box = el(`<div class="hv-agentbox hv-glass" role="dialog" aria-label="Agent network">
-    <header><div><h3>Agent network</h3><p>Six helpers quietly sorting things out, so people don't have to phone around.</p></div><button type="button" class="hv-x hv-press" aria-label="Close">${I.x}</button></header>
-    <div class="hv-crew"><svg class="links" aria-hidden="true"></svg>${CREW.map((c) => `<span class="hv-ag" data-a="${c.k}" style="--t:${c.tint}">${I[c.icon]}<span class="hv-crew-n">${c.name}</span></span>`).join('')}</div>
+    <header><div><h3>Agent network</h3><p>${esc(blurb)}</p></div><button type="button" class="hv-x hv-press" aria-label="Close">${I.x}</button></header>
+    <div class="hv-crew"><svg class="links" aria-hidden="true"></svg>${crewList.map((c) => `<span class="hv-ag" data-a="${c.k}" style="--t:${c.tint}">${I[c.icon]}<span class="hv-crew-n">${c.tile ?? c.name}</span></span>`).join('')}</div>
     <div class="hv-feed hv-scroll"><div class="hv-feed-pad"></div></div>
   </div>`);
   root.append(box);
@@ -42,6 +59,15 @@ export function createAgents(ui) {
   };
   chip.addEventListener('click', () => setOpen(!open));
   box.querySelector('.hv-x').addEventListener('click', () => setOpen(false));
+  if (twin.live) {
+    // Live mode: the panel is the conversation. It sizes to what has been said, and the avatars open their agent.
+    box.classList.add('hv-chat');
+    crew.addEventListener('click', (e) => {
+      const k = e.target.closest('.hv-ag')?.dataset.a;
+      if (k) twin.live.focusAgent?.(k);
+    });
+    twin.live.openChat = () => setOpen(true);
+  }
 
   function msgNode(m, fresh) {
     const f = who(m.from), t = who(m.to);
@@ -87,12 +113,15 @@ export function createAgents(ui) {
     }
     lastId = newest.id;
     while (feed.children.length > MAX_NODES + 1) feed.children[1].remove();
+    // Live mode: when the agents start talking, the conversation shows itself.
+    if (twin.live && !first && !open && !ui.tour?.active) setOpen(true);
     if (open && stick) feed.scrollTo({ top: feed.scrollHeight, behavior: ui.calm() ? 'auto' : 'smooth' });
     else if (!open) feed.scrollTop = feed.scrollHeight;
   }
 
   return {
     chip,
+    open: () => setOpen(true),
     close: () => (open ? setOpen(false) : false),
     get isOpen() { return open; },
     tick: pull,

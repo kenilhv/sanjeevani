@@ -6,6 +6,10 @@ import { registerOutdoorProps } from './props/outdoor.js';
 import { createTwin } from './sim/index.js';
 import { createPeople } from './people/index.js';
 import { mountUI } from './ui/index.js';
+import { DEMO, CLOSED_ROOMS } from './live/config.js';
+import { hiddenRooms } from './ui/util.js';
+import { createLiveTwin } from './live/twin.js';
+import { mountLive } from './live/ui.js';
 
 const q = new URLSearchParams(location.search);
 const num = (k) => (q.has(k) ? Number(q.get(k)) : undefined);
@@ -16,15 +20,23 @@ registerOutdoorProps();
 
 const engine = createEngine(document.getElementById('stage'), { quality: q.get('quality') || 'auto' });
 const shell = buildShell(engine);
-const twin = createTwin({ shell });
+// Live (default) is driven by the Sanjeevani backend; ?demo=1 is the original fully simulated hospital.
+const twin = DEMO ? createTwin({ shell }) : createLiveTwin({ shell });
 const people = createPeople(engine);
+// One floor: Level 1 holds the wards, ICU and nurse station, which is where the night and the handoff happen.
+engine.setFloorMode('level1');
 
-if (q.has('hours')) twin.setHours(num('hours'));
-if (q.has('warm')) for (let m = 0; m < num('warm'); m++) twin.tick(1 / Math.max(twin.speed, 1));
-if (q.has('scenario')) twin.runScenario(q.get('scenario'));
-if (q.has('speed')) twin.setSpeed(num('speed'));
+if (DEMO) {
+  if (q.has('hours')) twin.setHours(num('hours'));
+  if (q.has('warm')) for (let m = 0; m < num('warm'); m++) twin.tick(1 / Math.max(twin.speed, 1));
+  if (q.has('scenario')) twin.runScenario(q.get('scenario'));
+  if (q.has('speed')) twin.setSpeed(num('speed'));
+}
 
+// Live mode shows only what the story needs: Pod A, Pod B, the nurse station, corridor and lifts.
+if (!DEMO) for (const id of CLOSED_ROOMS) hiddenRooms.add(id);
 const ui = mountUI({ engine, twin, shell, people, root: document.getElementById('ui'), params: q });
+if (!DEMO) mountLive(ui);
 
 let frames = 0;
 engine.onFrame((dt, t) => {
@@ -40,7 +52,6 @@ engine.onFrame((dt, t) => {
 
 window.__twin = { engine, shell, twin, people, ui };
 
-if (q.has('floor')) engine.setFloorMode(q.get('floor'));
 if (q.has('focus')) engine.focusRoom(q.get('focus'));
 // Compile before the first frame, or Level 1 freezes the opening for two seconds the moment it comes into view.
 await engine.renderer.compileAsync(engine.scene, engine.camera).catch((e) => console.warn('shader warm-up', e));

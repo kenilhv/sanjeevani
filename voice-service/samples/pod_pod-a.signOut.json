@@ -1,0 +1,12 @@
+{
+  "actor": "pod:pod-a",
+  "method": "signOut",
+  "input": {
+    "nurseId": "maya"
+  },
+  "response": {
+    "ok": true,
+    "keptContext": true
+  },
+  "emits": []
+}

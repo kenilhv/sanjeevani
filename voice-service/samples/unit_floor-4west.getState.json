@@ -1,0 +1,63 @@
+{
+  "actor": "unit:floor-4west",
+  "method": "getState",
+  "input": {},
+  "response": {
+    "floor": "floor-4west",
+    "simTime": "06:45",
+    "speed": 1,
+    "assignments": {
+      "pod-a": "jordan",
+      "pod-b": null
+    },
+    "roomStatus": {
+      "room-2": {
+        "status": "warning",
+        "owner": "maya"
+      },
+      "room-4": {
+        "status": "stable",
+        "owner": "jordan"
+      },
+      "room-6": {
+        "status": "warning",
+        "owner": "maya"
+      },
+      "room-8": {
+        "status": "warning",
+        "owner": "maya"
+      },
+      "room-3": {
+        "status": "stable",
+        "owner": null
+      }
+    },
+    "checklist": {
+      "room-2": {
+        "sectionReady": true,
+        "flagsAcked": true,
+        "readbackOk": false,
+        "accepted": false
+      },
+      "room-4": {
+        "sectionReady": true,
+        "flagsAcked": true,
+        "readbackOk": true,
+        "accepted": true
+      },
+      "room-6": {
+        "sectionReady": true,
+        "flagsAcked": true,
+        "readbackOk": false,
+        "accepted": false
+      },
+      "room-8": {
+        "sectionReady": true,
+        "flagsAcked": true,
+        "readbackOk": false,
+        "accepted": false
+      }
+    }
+  },
+  "emits": []
+}

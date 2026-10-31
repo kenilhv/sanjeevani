@@ -48,7 +48,9 @@ export function sparkPaths(values, w, h) {
 
 export const roomName = (twin, id) => twin?.rooms?.get?.(id)?.name ?? roomById(id)?.name ?? 'Hospital';
 export const floorName = (i) => (i === 1 ? 'Level 1' : 'Ground floor');
-export const publicRooms = () => ROOMS.filter((r) => !r.circulation);
+// Rooms closed off in live mode (not part of the story): no labels, no busy map, no bed markers.
+export const hiddenRooms = new Set();
+export const publicRooms = () => ROOMS.filter((r) => !r.circulation && !hiddenRooms.has(r.id));
 
 export const ROLE = {
   nurse: 'Nurse', doctor: 'Doctor', surgeon: 'Surgeon', tech: 'Technician', paramedic: 'Paramedic', porter: 'Porter',

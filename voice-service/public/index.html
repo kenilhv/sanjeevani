@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sanjeevni · Voice + Director console</title>
+<style>
+  :root { color-scheme: dark; --bg: #0d1117; --panel: #161b22; --line: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --red: #f85149; --amber: #d29922; --green: #3fb950; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  header { display: flex; gap: 16px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; }
+  .pill { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+  .pill.on { color: var(--green); border-color: var(--green); }
+  .pill.off { color: var(--red); border-color: var(--red); }
+  #clock { font: 600 22px ui-monospace, monospace; margin-left: auto; }
+  main { display: grid; grid-template-columns: minmax(340px, 460px) 1fr; gap: 12px; padding: 12px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  button, select, input { font: inherit; color: var(--text); background: #21262d; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  input[type=text] { flex: 1; min-width: 160px; }
+  .ptt { width: 100%; padding: 14px; font-weight: 600; user-select: none; touch-action: none; }
+  .ptt.recording { background: var(--red); border-color: var(--red); }
+  .ptt.sending { background: var(--amber); border-color: var(--amber); color: #000; }
+  .preset { font-size: 12px; padding: 3px 8px; color: var(--muted); }
+  #log { font: 12px/1.5 ui-monospace, monospace; height: calc(100vh - 110px); overflow: auto; margin: 0; white-space: pre-wrap; }
+  #log .agent { color: var(--accent); } #log .urgent { color: var(--red); } #log .soon { color: var(--amber); }
+  #log .transcript { color: var(--text); font-weight: 600; } #log .speech { color: var(--green); } #log .err { color: var(--red); }
+  #log .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🌿 Sanjeevni · voice + director</h1>
+  <span id="h-backend" class="pill">backend ?</span>
+  <span id="h-openai" class="pill">openai ?</span>
+  <span id="h-supabase" class="pill">supabase ?</span>
+  <span id="h-ws" class="pill off">events offline</span>
+  <span id="clock">--:--</span>
+</header>
+<main>
+  <div>
+    <section>
+      <h2>Director</h2>
+      <div class="row">
+        <button data-director="start-night">Start night (19:00)</button>
+        <button data-director="jump-2330">Jump to 23:30</button>
+        <button data-director="ff-0330">Fast-forward to 03:30</button>
+        <button data-director="jump-0400">Jump to 04:00</button>
+      </div>
+      <div class="row">
+        <button data-director="prep-briefing">Pre-generate briefing</button>
+        <button data-director="handoff">7am handoff ☀️</button>
+        <button data-director="play-briefing">Replay briefing</button>
+      </div>
+      <div class="row">
+        <button data-director="restart">💥 Restart backend</button>
+        <button data-director="reset">Reset night</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Nurse</h2>
+      <div class="row">
+        <select id="pod"><option value="pod-a">Ward A</option><option value="pod-b">Ward B</option></select>
+        <select id="nurse"><option>maya</option><option>jordan</option><option>sam</option></select>
+        <button id="signin">Sign in</button>
+        <button id="signout">Sign out</button>
+      </div>
+      <div class="row"><button class="ptt" id="ptt-note">🎙️ Hold to talk: voice note</button></div>
+      <div class="row">
+        <input type="text" id="note-text" placeholder="Typed fallback: voice note">
+        <button id="note-send">Send</button>
+      </div>
+      <div class="row">
+        <button class="preset" data-fill="note-text">Room 6, gave zolpidem for sleep.</button>
+        <button class="preset" data-fill="note-text">Room 6, bed alarm is on.</button>
+        <button class="preset" data-fill="note-text">Room 4, given at 3, forgot to chart.</button>
+        <button class="preset" data-fill="note-text">Room 4, pain 7, gave oxycodone 5 milligrams.</button>
+      </div>
+      <div class="row"><button class="ptt" id="ptt-ask">❓ Hold to ask</button></div>
+      <div class="row">
+        <input type="text" id="ask-text" placeholder="Typed fallback: question">
+        <button id="ask-send">Ask</button>
+      </div>
+      <div class="row">
+        <button class="preset" data-fill="ask-text">Did Room 4's pain improve?</button>
+        <button class="preset" data-fill="ask-text">Why was Room 6's sleeping pill started?</button>
+      </div>
+      <div class="row">
+        <select id="rb-room"><option>room-2</option><option>room-4</option><option>room-6</option><option>room-8</option><option>room-3</option></select>
+        <button class="ptt" id="ptt-readback" style="flex:1;width:auto">🔁 Hold to read back</button>
+      </div>
+      <div class="row">
+        <input type="text" id="rb-text" placeholder="Typed fallback: read-back">
+        <button id="rb-send">Read back</button>
+      </div>
+      <div class="row">
+        <button class="preset" data-fill="rb-text">Room 4: 3am potassium given late, confirmed. Pain down to 3.</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Bedside</h2>
+      <div class="row">
+        <select id="bed-room"><option>room-8</option><option>room-2</option><option>room-4</option><option>room-6</option><option>room-3</option></select>
+        <button class="ptt" id="ptt-bedside" style="flex:1;width:auto">🛏️ Hold to talk to your care team</button>
+      </div>
+      <div class="row">
+        <input type="text" id="bed-text" placeholder="Typed fallback: patient request">
+        <button id="bed-send">Send</button>
+        <button class="preset" data-fill="bed-text">I feel shaky.</button>
+      </div>
+    </section>
+    <label class="muted"><input type="checkbox" id="autoplay" checked> Auto-play speech audio</label>
+  </div>
+
+  <section>
+    <h2>Event stream (ws /events) + responses</h2>
+    <pre id="log"></pre>
+  </section>
+</main>
+
+<script type="module">
+import { attachPushToTalk, sendTyped } from "/ptt.js"
+
+const $ = (id) => document.getElementById(id)
+const logEl = $("log")
+const played = new Set()
+
+function log(text, cls = "") {
+  const line = document.createElement("div")
+  line.className = cls
+  line.textContent = `${new Date().toLocaleTimeString()}  ${text}`
+  logEl.prepend(line)
+}
+
+function play(url) {
+  if (!url || played.has(url) || !$("autoplay").checked) return
+  played.add(url)
+  setTimeout(() => played.delete(url), 5000)
+  new Audio(url).play().catch((err) => log(`audio blocked: ${err.message} (click the page once)`, "err"))
+}
+
+function describe(e) {
+  switch (e.kind) {
+    case "clock": $("clock").textContent = e.simTime; return [`⏱  clock ${e.simTime} x${e.speed}`, "muted"]
+    case "agent.message": return [`✉️  ${e.from} → ${e.to} [${e.type}${e.level ? ":" + e.level : ""}] ${e.text}`, e.level === "urgent" ? "urgent" : e.level === "soon" ? "soon" : "agent"]
+    case "transcript": return [`🎙️  ${e.who}: "${e.text}"`, "transcript"]
+    case "speech": play(e.audioUrl); return [`🔊  ${e.who}: ${e.text}${e.audioUrl ? "" : "  (no audio)"}`, "speech"]
+    case "room.status": return [`🏥  ${e.room} → ${e.status}${e.label ? " · " + e.label : ""} (owner ${e.owner ?? "-"})`, e.status === "urgent" ? "urgent" : e.status === "warning" ? "soon" : ""]
+    case "nurse.change": return [`👩‍⚕️  ${e.pod}: ${e.from ?? "nobody"} → ${e.to}`, "transcript"]
+    case "handoff.progress": return [`✅  ${e.room} handoff ${e.state}`, "speech"]
+    default: return [`ℹ️  ${JSON.stringify(e)}`, ""]
+  }
+}
+
+function connect() {
+  const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/events`)
+  ws.onopen = () => { $("h-ws").textContent = "events live"; $("h-ws").className = "pill on" }
+  ws.onmessage = (m) => {
+    const e = JSON.parse(m.data)
+    if (e.kind === "vitals") return // every 5 s per patient; too chatty for the log
+    const [text, cls] = describe(e)
+    log(text, cls)
+  }
+  ws.onclose = () => { $("h-ws").textContent = "events offline"; $("h-ws").className = "pill off"; setTimeout(connect, 1000) }
+}
+connect()
+
+async function health() {
+  const h = await fetch("/health").then((r) => r.json()).catch(() => null)
+  if (!h) return
+  $("h-backend").textContent = `backend ${h.backend}`; $("h-backend").className = `pill ${h.backend === "terse" ? "on" : ""}`
+  $("h-openai").textContent = `openai ${h.openai ? "on" : "off"}`; $("h-openai").className = `pill ${h.openai ? "on" : "off"}`
+  $("h-supabase").textContent = `supabase ${h.supabase ? "on" : "off"}`; $("h-supabase").className = `pill ${h.supabase ? "on" : "off"}`
+}
+health()
+
+const show = (label) => (res) => { log(`← ${label} ${JSON.stringify(res)}`, "muted"); play(res?.audioUrl) }
+const fail = (label) => (err) => log(`✖ ${label}: ${err.message}`, "err")
+const q = (params) => new URLSearchParams(params).toString()
+
+const endpoints = {
+  note: () => `/voice/nurse?${q({ podId: $("pod").value, nurseId: $("nurse").value })}`,
+  ask: () => `/voice/ask?${q({ podId: $("pod").value, nurseId: $("nurse").value })}`,
+  readback: () => `/voice/readback?${q({ podId: $("pod").value, nurseId: $("nurse").value, room: $("rb-room").value })}`,
+  bedside: () => `/voice/bedside?${q({ room: $("bed-room").value })}`,
+}
+
+for (const [id, key] of [["ptt-note", "note"], ["ptt-ask", "ask"], ["ptt-readback", "readback"], ["ptt-bedside", "bedside"]]) {
+  const button = $(id)
+  attachPushToTalk(button, {
+    url: endpoints[key],
+    onState: (s) => (button.className = `ptt ${s}`),
+    onResult: show(key),
+    onError: fail(key),
+  })
+}
+
+for (const [inputId, buttonId, key] of [["note-text", "note-send", "note"], ["ask-text", "ask-send", "ask"], ["rb-text", "rb-send", "readback"], ["bed-text", "bed-send", "bedside"]]) {
+  const submit = () => $(inputId).value.trim() && sendTyped(endpoints[key](), $(inputId).value.trim()).then(show(key), fail(key))
+  $(buttonId).onclick = submit
+  $(inputId).onkeydown = (e) => e.key === "Enter" && submit()
+}
+
+document.querySelectorAll("[data-fill]").forEach((b) => (b.onclick = () => { $(b.dataset.fill).value = b.textContent; $(b.dataset.fill).focus() }))
+
+async function post(path, body = {}) {
+  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)
+  return json
+}
+
+document.querySelectorAll("[data-director]").forEach((b) => {
+  b.onclick = () => {
+    const action = b.dataset.director
+    log(`→ director ${action}`, "muted")
+    b.disabled = true
+    post(`/director/${action}`).then(show(action), fail(action)).finally(() => (b.disabled = false))
+  }
+})
+
+$("signin").onclick = () => post("/auth/signin", { nurseId: $("nurse").value }).then(show("signin"), fail("signin"))
+$("signout").onclick = () => post("/auth/signout", { nurseId: $("nurse").value }).then(show("signout"), fail("signout"))
+$("nurse").onchange = () => ($("pod").value = $("nurse").value === "sam" ? "pod-b" : "pod-a")
+</script>
+</body>
+</html>

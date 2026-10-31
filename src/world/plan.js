@@ -1,7 +1,7 @@
 // The hospital floor plan. Two stacked plates over one footprint (38 × 26 m).
 // World axes: +X east, +Z south, +Y up. Origin = NW corner of the building, floor 0.
 // Default camera sits to the SE and looks NW, so the N and W perimeter walls are the tall "backdrop".
-export const HOSPITAL_NAME = 'Haven General';
+export const HOSPITAL_NAME = 'Sanjeevani';
 export const FLOOR_HEIGHT = 3.6;
 export const BUILDING = { w: 38, d: 26 };
 export const WALL = { full: 3.05, cut: 0.5, partition: 1.3, glassTop: 2.55, door: 2.25, thick: 0.2 };

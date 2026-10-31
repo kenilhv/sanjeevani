@@ -177,10 +177,7 @@ export function mountUI({ engine, twin, shell, people, root, params }) {
       if (document.activeElement?.matches?.('button:focus-visible')) return;
       e.preventDefault();
       ui.clock.togglePause();
-    } else if (k === '1') ui.floors.set('ground');
-    else if (k === '2') ui.floors.set('level1');
-    else if (k === '3') ui.floors.set('stack');
-    else if (k === 'q') engine.rotate?.(-1);
+    } else if (k === 'q') engine.rotate?.(-1);
     else if (k === 'e') engine.rotate?.(1);
     else if (k === 'h') ui.dock.toggleBusy();
     else if (k === 'k' || k === '/') { e.preventDefault(); ui.ask.open(); }

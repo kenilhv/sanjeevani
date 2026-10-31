@@ -1,0 +1,64 @@
+{
+  "actor": "patient:room-2",
+  "method": "addVital",
+  "input": {
+    "type": "bp_systolic",
+    "value": 98,
+    "simTime": "04:00"
+  },
+  "response": {
+    "ok": true,
+    "trend": [
+      128,
+      112,
+      98
+    ]
+  },
+  "emits": [
+    {
+      "kind": "vitals",
+      "room": "room-2",
+      "vitals": {
+        "hr": 108,
+        "spo2": 93,
+        "rr": 22,
+        "sys": 98,
+        "dia": 59,
+        "temp": 38.4
+      },
+      "simTime": "03:31"
+    },
+    {
+      "kind": "agent.message",
+      "from": "twin-room-2",
+      "to": "nurse-pod-a",
+      "type": "alert",
+      "level": "soon",
+      "text": "SBP 128 → 112 → 98 over 3 checks, HR 108, T 38.4. Meets sepsis screen. Escalate?",
+      "simTime": "03:31"
+    },
+    {
+      "kind": "room.status",
+      "room": "room-2",
+      "status": "warning",
+      "owner": "maya",
+      "label": "BP falling: 128 → 98"
+    },
+    {
+      "kind": "agent.message",
+      "from": "nurse-pod-a",
+      "to": "nurse-pod-b",
+      "type": "help.request",
+      "text": "Maya is with Room 8 (glucose 62). Can Sam check Room 2's blood pressure now?",
+      "simTime": "03:31"
+    },
+    {
+      "kind": "agent.message",
+      "from": "nurse-pod-b",
+      "to": "nurse-pod-a",
+      "type": "help.response",
+      "text": "Yes. Sam is heading to Room 2 with the vitals cart, about 2 minutes.",
+      "simTime": "03:31"
+    }
+  ]
+}

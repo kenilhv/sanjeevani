@@ -1,0 +1,102 @@
+{
+  "actor": "patient:room-6",
+  "method": "getState",
+  "input": {},
+  "response": {
+    "room": "room-6",
+    "name": "Walter Hughes",
+    "age": 81,
+    "sex": "M",
+    "mrn": "HG-4416950",
+    "diagnosis": "Right hip pain after a fall at home, no fracture on CT",
+    "admitted": "Oct 29, 19:45",
+    "attending": "Dr. Priya Raman (Hospitalist)",
+    "codeStatus": "DNR, okay to intubate",
+    "allergies": [
+      "No known drug allergies"
+    ],
+    "isolation": null,
+    "diet": "Cardiac",
+    "mobility": "Walker, one assist",
+    "oxygen": "Room air",
+    "fallRisk": {
+      "tool": "Morse",
+      "score": 65,
+      "level": "high"
+    },
+    "meds": [
+      {
+        "name": "Oxycodone",
+        "dose": "2.5 mg",
+        "route": "PO",
+        "freq": "q6h PRN pain",
+        "lastGiven": "20:15"
+      },
+      {
+        "name": "Metoprolol tartrate",
+        "dose": "25 mg",
+        "route": "PO",
+        "freq": "BID",
+        "next": "09:00",
+        "lastGiven": "21:00"
+      },
+      {
+        "name": "Tamsulosin",
+        "dose": "0.4 mg",
+        "route": "PO",
+        "freq": "nightly",
+        "lastGiven": "21:00"
+      },
+      {
+        "name": "Zolpidem",
+        "dose": "5 mg",
+        "route": "PO",
+        "freq": "nightly PRN sleep",
+        "note": "New tonight. Beers Criteria: avoid in older adults."
+      }
+    ],
+    "labs": [
+      {
+        "name": "Sodium",
+        "value": "134 mmol/L",
+        "at": "Oct 30 05:30",
+        "flag": "L"
+      }
+    ],
+    "baseline": {
+      "hr": 72,
+      "spo2": 95,
+      "rr": 16,
+      "sys": 142,
+      "dia": 84,
+      "temp": 36.7
+    },
+    "why": "Right hip pain after a fall at home, no fracture on CT",
+    "podId": "pod-a",
+    "status": "warning",
+    "owner": "maya",
+    "vitals": {
+      "hr": 72,
+      "spo2": 95,
+      "rr": 16,
+      "sys": 141,
+      "dia": 84,
+      "temp": 36.7
+    },
+    "vitalsHistory": [],
+    "timeline": [
+      {
+        "id": "note-1",
+        "text": "gave zolpidem 5 milligrams for sleep",
+        "status": "draft",
+        "simTime": "23:30",
+        "by": "maya"
+      }
+    ],
+    "flags": [
+      "Zolpidem + high fall risk"
+    ],
+    "handoffSection": "Stable, high fall risk. Zolpidem 5 mg at 23:30. Bed alarm on, hourly rounds, no falls."
+  },
+  "emits": []
+}

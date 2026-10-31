@@ -34,7 +34,8 @@ function minuteStep(sim) {
   sim.minutes = (sim.minutes ?? 0) + 1;
   const n = sim.minutes;
   updateVitals(sim);
-  episodeRoll(sim);
+  // Random deteriorations are demo content; live mode gets its clinical events from the actors.
+  if (sim.clinical) episodeRoll(sim);
   for (const a of sim.actors) {
     if (a.bubble && sim.now > a._bubbleUntil) a.bubble = null;
     if (a._moving || a._leader) syncRoom(a);
@@ -49,16 +50,19 @@ function minuteStep(sim) {
   if (day !== sim.day) { sim.day = day; sim.stats.admissions = 0; sim.stats.discharges = 0; }
 }
 
-export function createTwin({ shell } = {}) {
+// clinical: false keeps only the ambient life (people, vehicles, routines) for live mode,
+// with no invented alerts, episodes or agent chatter. Demo mode keeps the full simulation.
+export function createTwin({ shell, clinical = true } = {}) {
   const sim = createCore(shell);
   sim.day = 0;
+  sim.clinical = clinical;
   populate(sim);
   sim.minuteStep = minuteStep;
   // Silent head start, so staff are mid-stride on the very first frame instead of all standing at their marks.
   for (let i = 0; i < WARMUP_MIN / STEP; i++) advance(sim, STEP);
   updateVitals(sim); updateRooms(sim); updateMetrics(sim);
   prefillHistory(sim);
-  afterWarm(sim);
+  if (clinical) afterWarm(sim);
 
   const clock = { minutes: 0, hours: 0, label: '', dayPart: '' };
   syncClock(sim, clock);
@@ -68,6 +72,8 @@ export function createTwin({ shell } = {}) {
     actors: sim.actors, vehicles: sim.vehicles, beds: sim.beds, rooms: sim.rooms, equipment: sim.equipment,
     alerts: sim.alerts, metrics: sim.metrics, history: sim.history, feed: sim.feed,
     lifts: sim.lifts,
+    // For live mode's choreography (the shift-change walk-out and walk-in). Not part of the twin contract.
+    _sim: sim,
     get scenario() { return sim.scenario; },
     tick(dt) {
       if (twin.paused || !(dt > 0)) return;

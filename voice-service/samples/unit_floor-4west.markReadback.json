@@ -1,0 +1,14 @@
+{
+  "actor": "unit:floor-4west",
+  "method": "markReadback",
+  "input": {
+    "room": "room-4",
+    "ok": true
+  },
+  "response": {
+    "ok": true,
+    "room": "room-4",
+    "accepted": true
+  },
+  "emits": []
+}

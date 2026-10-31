@@ -1,0 +1,30 @@
+{
+  "actor": "pod:pod-a",
+  "method": "ask",
+  "input": {
+    "question": "Did Room 4's pain improve?",
+    "nurseId": "jordan"
+  },
+  "response": {
+    "answer": "Pain was 7 out of 10 at 22:00, so Maya gave oxycodone 5 mg. At the 23:00 recheck it was 3, and she slept after that.",
+    "room": "room-4"
+  },
+  "emits": [
+    {
+      "kind": "agent.message",
+      "from": "nurse-pod-a",
+      "to": "twin-room-4",
+      "type": "question",
+      "text": "jordan asks: Did Room 4's pain improve?",
+      "simTime": "06:45"
+    },
+    {
+      "kind": "agent.message",
+      "from": "twin-room-4",
+      "to": "nurse-pod-a",
+      "type": "answer",
+      "text": "Pain was 7 out of 10 at 22:00, so Maya gave oxycodone 5 mg. At the 23:00 recheck it was 3, and she slept after that.",
+      "simTime": "06:45"
+    }
+  ]
+}

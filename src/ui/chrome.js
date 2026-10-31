@@ -42,38 +42,11 @@ export function createBrand(ui) {
   };
 }
 
+// Single floor: Level 1 (wards, ICU, nurse station). The floor switch is gone; set() stays so callers that
+// reveal a floor before focusing something keep working, and it always lands on Level 1.
 export function createFloors(ui) {
-  const { engine } = ui;
-  const MODES = [['ground', 'Ground'], ['level1', 'Level 1'], ['stack', 'Both']];
-  const node = el(`<div class="hv-tc"><div class="hv-seg hv-glass hv-enter" role="group" aria-label="Choose a floor">
-    <span class="hv-seg-thumb"></span>
-    ${MODES.map(([m, l]) => `<button type="button" data-m="${m}" aria-pressed="false">${l}</button>`).join('')}
-  </div></div>`);
-  const seg = node.firstElementChild, thumb = seg.querySelector('.hv-seg-thumb');
-  const btns = [...seg.querySelectorAll('button')];
-  let shown = null;
-  // 'view' fires continuously during a zoom, so only touch layout when the mode really changed.
-  const sync = (force) => {
-    const mode = engine.floorMode ?? 'ground';
-    if (mode === shown && force !== true) return;
-    shown = mode;
-    for (const b of btns) {
-      const on = b.dataset.m === mode;
-      b.setAttribute('aria-pressed', on);
-      if (on) { thumb.style.width = `${b.offsetWidth}px`; thumb.style.transform = `translateX(${b.offsetLeft}px)`; }
-    }
-  };
-  seg.addEventListener('click', (e) => {
-    const b = e.target.closest('button');
-    if (b) set(b.dataset.m);
-  });
-  const set = (m) => { engine.setFloorMode?.(m); sync(); };
-  ui.root.append(node);
-  engine.on?.('view', sync);
-  addEventListener('resize', () => sync(true));
-  document.fonts?.ready?.then(() => sync(true));
-  sync(true);
-  return { set, sync };
+  const set = () => { if (ui.engine.floorMode !== 'level1') ui.engine.setFloorMode?.('level1'); };
+  return { set, sync() {} };
 }
 
 const toFrac = (h) => ((h - 5 + 24) % 24) / 24;
@@ -122,6 +95,8 @@ export function createClock(ui) {
   const end = () => { dragging = false; scrub.classList.remove('drag'); };
   scrub.addEventListener('pointerup', end);
   scrub.addEventListener('pointercancel', end);
+  // A drag can also end by losing capture (window blur, devtools); without this it keeps following the mouse.
+  scrub.addEventListener('lostpointercapture', end);
   scrub.addEventListener('keydown', (e) => {
     const d = e.key === 'ArrowRight' ? 0.25 : e.key === 'ArrowLeft' ? -0.25 : 0;
     if (!d) return;

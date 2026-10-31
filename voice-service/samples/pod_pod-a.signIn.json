@@ -1,0 +1,19 @@
+{
+  "actor": "pod:pod-a",
+  "method": "signIn",
+  "input": {
+    "nurseId": "jordan"
+  },
+  "response": {
+    "ok": true,
+    "currentNurse": "jordan"
+  },
+  "emits": [
+    {
+      "kind": "nurse.change",
+      "pod": "pod-a",
+      "from": "maya",
+      "to": "jordan"
+    }
+  ]
+}

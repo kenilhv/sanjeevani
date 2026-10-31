@@ -14,9 +14,11 @@ export function createDock(ui) {
   const node = el(`<div class="hv-dockwrap">
     <div class="hv-legend hv-glass">Quiet<i></i>Full</div>
     <div class="hv-dock hv-glass hv-enter" role="toolbar" aria-label="Controls">
-      <span class="hv-dock-t">What if…</span>
+      ${twin.live ? `<button type="button" class="hv-chip hv-press" data-live="story" aria-pressed="false">${I.play}Play the story</button>
+      <button type="button" class="hv-chip hv-press" data-live="shift" aria-pressed="false">${I.sun}Shift handover</button>
+      <i class="hv-sep"></i>` : `<span class="hv-dock-t">What if…</span>
       ${SCENARIOS.map(([id, label, icon]) => `<button type="button" class="hv-chip hv-press" data-s="${id}" aria-pressed="false">${I[icon]}${label}</button>`).join('')}
-      <i class="hv-sep"></i>
+      <i class="hv-sep"></i>`}
       ${tool('busy', 'heat', 'Busy map', 'Colours each room by how full it is', 'H', true)}
       ${tool('flow', 'flow', 'Movement', 'Shows where people are walking', '', true)}
       ${tool('labels', 'tag', 'Labels', 'Always show room names', '', true)}
@@ -64,6 +66,8 @@ export function createDock(ui) {
     return engine.flyTo?.({ zoom: ui.zoomValue() * f, duration: 0.45 });
   }
   node.addEventListener('click', (e) => {
+    const action = e.target.closest('[data-live]');
+    if (action) { twin.live?.actions?.[action.dataset.live]?.(action); return; }
     const chip = e.target.closest('.hv-chip');
     if (chip) { twin.runScenario?.(chip.dataset.s); syncScenario(); return; }
     const a = e.target.closest('[data-a]')?.dataset.a;

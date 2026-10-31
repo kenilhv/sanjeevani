@@ -8,12 +8,14 @@ const CPS = 52;
 export function createAsk(ui) {
   const { twin, root, shell } = ui;
   const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+  // Live mode asks the pod's Nurse Agent, which asks the right Patient Twin when it needs details.
+  const blurb = twin.live ? 'The Nurse Agent answers, asking a patient’s Twin when it needs to. Hold the mic to ask out loud.' : 'Anything you would normally phone around for.';
   const pill = el(`<button type="button" class="hv-ask hv-glass hv-enter hv-press" aria-label="Ask the hospital">${I.spark}<span>Ask the hospital</span><kbd class="hv-kbd">${mac ? '⌘K' : 'Ctrl K'}</kbd></button>`);
   const box = el(`<div class="hv-askbox hv-glass" role="dialog" aria-label="Ask the hospital">
     <h3>Ask the hospital</h3>
-    <p>Anything you would normally phone around for.</p>
+    <p>${esc(blurb)}</p>
     <div class="hv-ask-log hv-scroll"></div>
-    <div class="hv-sugg">${SUGGESTIONS.map((s) => `<button type="button" class="hv-press">${esc(s)}</button>`).join('')}</div>
+    <div class="hv-sugg">${(twin.suggestions ?? SUGGESTIONS).map((s) => `<button type="button" class="hv-press">${esc(s)}</button>`).join('')}</div>
     <form class="hv-field">${I.spark}<input type="text" placeholder="Ask in your own words" aria-label="Your question" autocomplete="off" spellcheck="false" />
       <button type="submit" class="hv-send hv-press" aria-label="Ask">${I.send}</button></form>
   </div>`);
@@ -66,7 +68,8 @@ export function createAsk(ui) {
     let r;
     try { r = await twin.ask?.(q); } catch { r = null; }
     const a = qa.querySelector('.hv-qa-a');
-    reveal(a, r?.answer || "I'm not sure about that one yet. Try asking about beds, waits, staff or equipment.", () => go(r));
+    const fallback = twin.live ? 'The Nurse Agent isn’t reachable right now. Check that the voice service is running.' : "I'm not sure about that one yet. Try asking about beds, waits, staff or equipment.";
+    reveal(a, r?.answer || fallback, () => go(r));
   }
   return {
     pill, ask,

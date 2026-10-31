@@ -1,0 +1,40 @@
+{
+  "actor": "patient:room-4",
+  "method": "readback",
+  "input": {
+    "text": "Room 4: 3am potassium given late, confirmed. Pain down to 3.",
+    "nurseId": "jordan"
+  },
+  "response": {
+    "ok": true
+  },
+  "emits": [
+    {
+      "kind": "agent.message",
+      "from": "nurse-pod-a",
+      "to": "twin-room-4",
+      "type": "readback",
+      "text": "jordan's read-back: Room 4: 3am potassium given late, confirmed. Pain down to 3.",
+      "simTime": "06:45"
+    },
+    {
+      "kind": "agent.message",
+      "from": "twin-room-4",
+      "to": "nurse-pod-a",
+      "type": "readback.ok",
+      "text": "Read-back correct. Ownership can move.",
+      "simTime": "06:45"
+    },
+    {
+      "kind": "handoff.progress",
+      "room": "room-4",
+      "state": "accepted"
+    },
+    {
+      "kind": "room.status",
+      "room": "room-4",
+      "status": "stable",
+      "owner": "jordan"
+    }
+  ]
+}

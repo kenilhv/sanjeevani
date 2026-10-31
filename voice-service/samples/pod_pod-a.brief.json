@@ -1,0 +1,11 @@
+{
+  "actor": "pod:pod-a",
+  "method": "brief",
+  "input": {
+    "nurseId": "jordan"
+  },
+  "response": {
+    "text": "Good morning Jordan. Room 2, Daniel Okafor, is your sickest: his blood pressure fell to 98 overnight. Sam saw him at four and fluids are running. Room 4: the 3 a.m. potassium was given late but is charted, and her pain is down to 3. Room 6: new sleeping pill at 81, bed alarm on, no falls. Room 8: low sugar at 2, treated, now 108."
+  },
+  "emits": []
+}

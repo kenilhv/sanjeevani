@@ -1,0 +1,14 @@
+{
+  "actor": "unit:floor-4west",
+  "method": "assign",
+  "input": {
+    "podId": "pod-a",
+    "nurseId": "maya"
+  },
+  "response": {
+    "ok": true,
+    "podId": "pod-a",
+    "nurseId": "maya"
+  },
+  "emits": []
+}

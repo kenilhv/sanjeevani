@@ -80,15 +80,20 @@ const WHEELED = { speed: SPEED.push, anim: 'lie', gurney: true };
 
 /** A porter wheels the patient. The patient leads the path and the porter walks in their footsteps, so nobody clips a door frame. */
 export function* transfer(sim, p, target, o = {}) {
+  // Live mode: patients the actors own stay in their beds; the ambient simulation never moves them.
+  if (p._live) return;
   let done = false, started = false, pushed = null;
   const job = postJob(sim, {
     role: 'porter', pri: o.pri ?? 2, zone: `floor${p.floor}`, exclusive: 3,
     run: function* (porter) {
       started = true;
       try {
+        // Booked before live mode adopted the patient: nothing to collect.
+        if (p._live) return;
         porter._locked = true;
         porter.task = `On the way to collect ${p.display}`;
         yield* go(sim, porter, { floor: p.floor, ...sim.grids[p.floor].point(p.x + 0.9, p.z) });
+        if (p._live) return;
         o.onPickup?.();
         releaseAll(p);
         p._away = true; p.anim = 'lie'; p.y = LIE_Y;

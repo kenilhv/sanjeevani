@@ -1,0 +1,30 @@
+{
+  "actor": "patient:room-6",
+  "method": "readback",
+  "input": {
+    "text": "Room 6 is stable.",
+    "nurseId": "jordan"
+  },
+  "response": {
+    "ok": false,
+    "missing": "the new zolpidem and the bed alarm"
+  },
+  "emits": [
+    {
+      "kind": "agent.message",
+      "from": "nurse-pod-a",
+      "to": "twin-room-6",
+      "type": "readback",
+      "text": "jordan's read-back: Room 6 is stable.",
+      "simTime": "06:45"
+    },
+    {
+      "kind": "agent.message",
+      "from": "twin-room-6",
+      "to": "nurse-pod-a",
+      "type": "readback.missing",
+      "text": "Almost. Please include the new zolpidem and the bed alarm.",
+      "simTime": "06:45"
+    }
+  ]
+}
