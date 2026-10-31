@@ -10,7 +10,7 @@ function statusLine(twin) {
   if (crit) return [crit.title || 'A team is responding right now', 'danger'];
   if (twin.scenario === 'mci') return ['Emergency is taking in a big arrival', 'danger'];
   if ((m.erWaitMin ?? 0) >= 40) return ['Emergency is busier than usual', 'watch'];
-  if (m.bedsTotal && m.bedsFree <= 2) return ['Beds are running short', 'watch'];
+  if (m.bedsTotal && !m.bedsFree) return ['Beds are running short', 'watch'];
   if (twin.scenario === 'flu') return ['Busy with flu, but keeping up', 'watch'];
   const watch = open.find((a) => a.severity === 'watch');
   if (watch) return ['One thing to keep an eye on', 'watch'];

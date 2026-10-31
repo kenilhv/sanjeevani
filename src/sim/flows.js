@@ -409,7 +409,7 @@ function viaImaging(sim, p, kind, after) {
 }
 /** Came in on a trolley but does not need a bed: scanned, then up and walking back for the results. */
 function* scanThenWalk(sim, p, kind) {
-  p.task = `Waiting for a porter`;
+  p.task = 'Waiting for a porter';
   yield* transfer(sim, p, standIn(sim, 'radiology'), { label: 'Imaging', onPickup: () => vacate(sim, p), via: viaImaging(sim, p, kind, 'Up and walking again') });
   p.y = 0; p.anim = 'idle'; p._away = false;
   yield* awaitResults(sim, p);
@@ -776,10 +776,10 @@ export function* engineerVisit(sim, eq, o = {}) {
 }
 
 // ── The minute beat that keeps the building moving ──────────────────────────
-const dayCurve = (h) => Math.max(0.35, 0.72 + 0.36 * Math.sin(((h - 9) / 24) * Math.PI * 2));
+const dayCurve = (h) => Math.max(0.35, 0.8 + 0.24 * Math.sin(((h - 9) / 24) * Math.PI * 2));
 
-// Five bays turn over about six patients an hour. These gaps peak near four and a half arrivals an hour, so a normal afternoon
-// queues a little and clears. Much faster and the wait grows without limit, which is exactly what a surge is for.
+// Five bays turn over about six patients an hour while the wards have room. With the helicopter these gaps peak just over five,
+// so a normal afternoon queues a little and clears. Much faster and the wait grows without limit, which is what a surge is for.
 const WALK_IN_GAP = 16;
 const AMBULANCE_GAP = [38, 62];
 
@@ -804,7 +804,7 @@ export function minuteFlows(sim) {
   }
   if (now >= next.visitor) {
     next.visitor = now + rng.exp(10 / rates.visitor) + 2;
-    const open = h >= 8 && h < 20.5;
+    const open = h >= 8 && h < 20.5 && !sim.surge;
     const visitors = sim.actors.reduce((n, a) => n + (a.kind === 'visitor' ? 1 : 0), 0);
     if (open && visitors < 9 && roomFor(sim, 6)) {
       if (rng.chance(0.5) && sim.carsComing < 3) sim.startProc(carTrip(sim, { visitor: true }));
@@ -827,7 +827,9 @@ export function minuteFlows(sim) {
     next.discharge = now + 4;
     const beds = [...sim.beds.values()].filter((b) => b.kind === 'ward' && b._for !== 'surge');
     const occ = beds.filter((b) => b.status === 'occupied' || b.status === 'reserved').length / Math.max(1, beds.length);
-    // In a surge routine discharges hold off until the wards are nearly full, then anyone ready to go makes way.
+    // In a surge routine discharges hold off until the wards are nearly full, then anyone ready to go makes way. Occupancy moves in
+    // fourteenths of a ward: 0.82 starts forcing discharges at the thirteenth bed, and anything from 0.74 to 0.81 at the twelfth, which
+    // floods the cleaners and porters and brings the Emergency wait spikes back.
     const target = sim.surge ? 0.97 : 0.82, floor = sim.surge ? 0.93 : 0.58;
     const pool = [];
     for (const b of beds) {

@@ -5,12 +5,15 @@ import { icons as I } from './icons.js';
 const ICON = { info: 'bell', watch: 'bell', critical: 'pulse' };
 const LIFE = { info: 7000, watch: 11000, critical: 26000 };
 const MAX = 3;
+const GLOW_MS = 7000;
+const EMERGENCIES = ['codeblue', 'mci'];
 
 export function createToasts(ui, host) {
   const { twin, root } = ui;
   const edge = el(`<div class="hv-edgeglow" aria-hidden="true"></div>`);
   root.prepend(edge);
   const live = new Map();
+  let glowUntil = 0;
 
   function drop(id) {
     const t = live.get(id);
@@ -27,7 +30,10 @@ export function createToasts(ui, host) {
     return null;
   }
   function show(a) {
-    if (!a || live.has(a.id) || a.resolved) return;
+    if (!a || a.resolved) return;
+    if (a.severity === 'critical') glowUntil = performance.now() + GLOW_MS;
+    // Alerts raised behind the welcome screen wait in "Needs attention" instead of spoiling the opening.
+    if (live.has(a.id) || ui.welcome?.active) return;
     const hit = target(a);
     const s = a.severity ?? 'info';
     const node = el(`<div class="hv-toast hv-glass" data-s="${esc(s)}" role="status">
@@ -51,8 +57,10 @@ export function createToasts(ui, host) {
   return {
     show,
     tick() {
-      const crit = (twin.alerts ?? []).some((a) => a.severity === 'critical' && !a.resolved);
-      edge.classList.toggle('on', crit);
+      // The red edge marks the moment something turns critical, not the whole time it stays open: a hospital always has
+      // one patient to watch, and a screen that is permanently red stops meaning anything. Real emergencies keep it on.
+      const emergency = EMERGENCIES.includes(twin.scenario) && (twin.alerts ?? []).some((a) => a.severity === 'critical' && !a.resolved);
+      edge.classList.toggle('on', emergency || performance.now() < glowUntil);
     },
   };
 }

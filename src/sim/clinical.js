@@ -243,7 +243,8 @@ export function updateMetrics(sim) {
   const q = sim.er.triageQ.length + sim.er.bayQ.length;
   let waited = 0, n = 0;
   for (const list of [sim.er.triageQ, sim.er.bayQ]) for (const p of list) { waited += sim.now - p._arrivedAt; n++; }
-  const estimate = 6 + q * 4.2 + (n ? (waited / n) * 0.4 : 0) + (s.recentWait ?? 0) * 0.25;
+  // Nine is the floor: even with nobody queueing, check-in, triage and the walk to a bay take a quarter of an hour with the rest.
+  const estimate = 9 + q * 4.2 + (n ? (waited / n) * 0.4 : 0) + (s.recentWait ?? 0) * 0.25;
   s.erWait += (estimate - s.erWait) * 0.06;
   m.erWaitMin = Math.round(s.erWait);
   m.avgStayHours = Math.round((s.stays.reduce((x, y) => x + y, 0) / Math.max(1, s.stays.length)) * 10) / 10;

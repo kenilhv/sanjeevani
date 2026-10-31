@@ -119,7 +119,7 @@ function fillBeds(sim) {
   // The first opens the scene with a new arrival, the second is already bound for a ward, so a porter is on the move from the start.
   const opening = [rng.pick(WALK_INS), AMBULANCE[1], AMBULANCE[0]];
   for (let i = 0; i < Math.round(er.length * 0.6); i++) {
-    const bed = er[i], cond = opening[i];
+    const bed = er[i], cond = opening[i] ?? rng.pick(WALK_INS);
     const p = makePatient(sim, cond, { floor: 0, x: bed.x, z: bed.z, ago: rng.range(25, 120) });
     p._seen = i > 0;
     p.task = 'Being treated';

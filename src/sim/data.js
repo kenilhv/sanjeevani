@@ -76,10 +76,10 @@ export const ICU = [
 ];
 
 export const FLU = [
-  c('Flu, high fever', 3, { admit: 0.3, ward: 'Flu, on fluids', v: { temp: 38.3, hr: 102, rr: 20 } }),
-  c('Flu, struggling to breathe', 2, { scan: 'XRAY', admit: 0.55, ward: 'Flu with pneumonia, on oxygen', v: { spo2: 93.5, rr: 23, hr: 106, temp: 38.2 } }),
-  c('Flu, badly dehydrated', 3, { admit: 0.35, ward: 'Flu, on a drip', v: { hr: 100, sys: 104, temp: 38 } }),
-  c('Flu, feeling faint', 4, { admit: 0.12, ward: 'Flu, being watched', v: { temp: 37.9, hr: 96 } }),
+  c('Flu, high fever', 3, { admit: 0.45, ward: 'Flu, on fluids', v: { temp: 38.3, hr: 102, rr: 20 } }),
+  c('Flu, struggling to breathe', 2, { scan: 'XRAY', admit: 0.75, ward: 'Flu with pneumonia, on oxygen', v: { spo2: 93.5, rr: 23, hr: 106, temp: 38.2 } }),
+  c('Flu, badly dehydrated', 3, { admit: 0.5, ward: 'Flu, on a drip', v: { hr: 100, sys: 104, temp: 38 } }),
+  c('Flu, feeling faint', 4, { admit: 0.2, ward: 'Flu, being watched', v: { temp: 37.9, hr: 96 } }),
 ];
 
 // Anyone who came in through the front doors and is not a priority 1 or 2 walks to imaging on their own feet.

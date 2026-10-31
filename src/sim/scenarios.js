@@ -14,6 +14,12 @@ function announce(sim, name, phase, text, roomId, bedId) {
 }
 const settleScenario = (sim) => { sim.scenario = sim.surge ? 'flu' : 'normal'; };
 
+// Extra staff stay until the queue they came for has gone. Sending them all home at once is what made the wait spike after a surge.
+function* standDown(sim, staff) {
+  yield until(() => !sim.surge && sim.er.triageQ.length + sim.er.bayQ.length <= 2, 240);
+  for (const a of staff) a._leaving = true;
+}
+
 function recall(sim, role, zone, n, label) {
   const made = [];
   for (let i = 0; i < n && roomFor(sim, 1); i++) {
@@ -218,8 +224,7 @@ function* mci(sim, run) {
   say(sim, 'Triage', 'Staffing', 'Last casualty is in a bay. Standing down the major incident.', 'ack', 'er');
   sim.scenarioEnd?.('mci');
   settleScenario(sim);
-  for (const a of sim.recalled) if (!sim.surge) a._leaving = true;
-  if (!sim.surge) sim.recalled.length = 0;
+  if (!sim.surge) sim.startProc(standDown(sim, sim.recalled.splice(0)));
   announce(sim, 'mci', 'end', 'Major incident over. Everyone is being cared for.', 'er');
 }
 
@@ -257,12 +262,11 @@ function toNormal(sim) {
   sim.surge = false; sim.mciOn = false;
   sim.rates.walkIn = 1; sim.rates.ambulance = 1; sim.fluMix = 0;
   closeSurgeBeds(sim);
-  for (const a of sim.recalled) a._leaving = true;
-  sim.recalled.length = 0;
+  sim.startProc(standDown(sim, sim.recalled.splice(0)));
   resolveAlert(sim, sim.scenarioAlert, 'Back to normal.');
   sim.scenarioAlert = null;
   sim.scenario = 'normal';
-  say(sim, 'Staffing', 'Bed', 'Standing down. Extra staff can head home once they hand over.', 'ack');
+  say(sim, 'Staffing', 'Bed', 'Standing down. Extra staff can head home once the queue has cleared.', 'ack');
   announce(sim, 'normal', 'start', 'Back to a normal day.', null);
 }
 

@@ -42,5 +42,7 @@ window.__twin = { engine, shell, twin, people, ui };
 
 if (q.has('floor')) engine.setFloorMode(q.get('floor'));
 if (q.has('focus')) engine.focusRoom(q.get('focus'));
+// Compile before the first frame, or Level 1 freezes the opening for two seconds the moment it comes into view.
+await engine.renderer.compileAsync(engine.scene, engine.camera).catch((e) => console.warn('shader warm-up', e));
 engine.start();
 if (!q.has('skipIntro')) engine.intro();

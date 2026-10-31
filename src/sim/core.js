@@ -6,7 +6,7 @@ import { readWorld } from './world.js';
 import { makeNames } from './data.js';
 import { roomAt } from '../world/plan.js';
 
-export const SPEED = { walk: 1.35, stroll: 1.0, hobble: 0.8, run: 3.0, push: 1.5 };
+export const SPEED = { walk: 1.35, stroll: 1.0, hobble: 0.8, run: 3.0, push: 1.75 };
 export const STEP = 0.2;
 export const MAX_ACTORS = 80;
 export const LIE_Y = 0.6;

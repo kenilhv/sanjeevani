@@ -3,14 +3,14 @@
 import * as THREE from 'three';
 import { C } from '../style/palette.js';
 
-const MAX = 12000, MAX_PTS = 320, HALF = 0.15, HZ = 4;
+const MAX = 12000, MAX_PTS = 320, HALF = 0.21, HZ = 4;
 const VERT = `attribute vec3 aInfo; attribute vec3 aTint; varying vec3 vInfo; varying vec3 vTint;
 void main() { vInfo = aInfo; vTint = aTint; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const FRAG = `uniform float uT; uniform float uA; varying vec3 vInfo; varying vec3 vTint;
 void main() {
   float across = 1.0 - vInfo.y * vInfo.y, core = smoothstep(0.42, 0.72, across), glow = across * across;
   float d = fract(vInfo.x * 1.3 - uT * 1.25), on = smoothstep(0.0, 0.1, d) * smoothstep(0.62, 0.5, d);
-  gl_FragColor = vec4(mix(vTint, vec3(1.0), core * on * 0.35), (glow * 0.3 + core * on * 0.8) * vInfo.z * uA);
+  gl_FragColor = vec4(mix(vTint, vec3(1.0), core * on * 0.12), (glow * 0.62 + core * on * 0.38) * vInfo.z * uA);
   #include <colorspace_fragment>
 }`;
 
@@ -29,7 +29,7 @@ export function createFlow(engine) {
     g.setAttribute('position', attr(pos, 3)); g.setAttribute('aInfo', attr(info, 3)); g.setAttribute('aTint', attr(col, 3));
     g.setIndex(attr(idx, 1)); g.setDrawRange(0, 0);
     const mesh = new THREE.Mesh(g, mat);
-    mesh.frustumCulled = false; mesh.renderOrder = 2; mesh.visible = false;
+    mesh.name = 'flow'; mesh.frustumCulled = false; mesh.renderOrder = 2; mesh.visible = false;
     floor.add(mesh);
     return { g, mesh, pos, info, col, idx, v: 0, i: 0 };
   });

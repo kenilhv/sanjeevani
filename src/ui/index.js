@@ -77,7 +77,10 @@ export function mountUI({ engine, twin, shell, people, root, params }) {
   ui.select = (hit, { fly = true } = {}) => {
     const h = hit?.info ?? hit;
     if (!h?.type) return ui.clearSelection();
-    const { type, id } = h;
+    let { type, id } = h;
+    // A patient lying in bed is a click on that bed: the bed panel is the one with the heart trace and vitals.
+    const person = type === 'person' ? ui.actor(id) : null;
+    if (person?.anim === 'lie' && twin.beds?.get?.(person.bedId)?.patientId === id) { type = 'bed'; id = person.bedId; }
     const at = ui.locate(type, id);
     ui.inspector.open(type, id);
     people.highlight?.(type === 'person' ? id : null);
