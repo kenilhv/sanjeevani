@@ -1,0 +1,16 @@
+{
+  "name": "backend",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
+    "terse-sdk": "0.14.9"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

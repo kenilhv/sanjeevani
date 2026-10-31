@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.durable-actors/
+generated/
+dist/
+.relay-tokens.json
